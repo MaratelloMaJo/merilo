@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Публичный профиль кандидата — Merilo</title>
+  <meta name="description" content="Публичный профиль кандидата Merilo: верифицированные карточки навыков, языки, средний балл и записанные защиты.">
+  <meta name="theme-color" content="#F3EFE6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14130F" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex">
+  <script>
+    (function () {
+      try {
+        var forced = new URLSearchParams(location.search).get("theme");
+        var saved = localStorage.getItem("merilo.theme");
+        var theme = forced === "dark" || forced === "light"
+          ? forced
+          : (saved === "dark" || saved === "light"
+            ? saved
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- No external fonts or CDNs: the profile must render offline on the demo
+       stand. Palette and rhythm follow the shared Merilo paper system. -->
+  <style>
+    :root {
+      --paper: #F3EFE6;
+      --panel: #FAF7F0;
+      --ink: #191816;
+      --muted: #5E5A52;
+      --accent: #B33A2B;
+      --verified: #59624E;
+      --rule: #CFC7B8;
+      --serif: Georgia, "Times New Roman", serif;
+      --mono: ui-monospace, "Cascadia Mono", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    :root[data-theme="dark"] {
+      --paper: #14130F;
+      --panel: #1C1A15;
+      --ink: #F2EDE2;
+      --muted: #A8A296;
+      --accent: #E06A52;
+      --verified: #A8B89A;
+      --rule: #3A362D;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background-color: var(--paper); }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--ink); text-underline-offset: 0.2em; }
+    a:hover { color: var(--accent); }
+
+    a:focus-visible,
+    button:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      padding: 0.4rem 0.6rem;
+      z-index: 100;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+    }
+
+    .skip-link:focus {
+      left: 0.75rem;
+      top: 0.75rem;
+    }
+
+    .profile-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.5rem 1rem;
+      width: min(100% - 2rem, 960px);
+      margin: 0 auto;
+      padding: 1.3rem 0 0.8rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .profile-brand {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      letter-spacing: 0.02em;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .profile-tag {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: none;
+      color: var(--muted);
+      border: 1px solid var(--rule);
+      padding: 0.15rem 0.45rem;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-left: auto;
+      align-self: center;
+      padding: 0;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover,
+    .theme-toggle:focus-visible {
+      border-color: var(--ink);
+      background: var(--panel);
+    }
+
+    .theme-icon {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .theme-icon-sun { display: none; }
+    :root[data-theme="dark"] .theme-icon-sun { display: block; }
+    :root[data-theme="dark"] .theme-icon-moon { display: none; }
+
+    .profile-main {
+      width: min(100% - 2rem, 960px);
+      margin: 0 auto;
+      padding: 1.4rem 0 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+      min-width: 0;
+    }
+
+    .profile-panel {
+      border-top: 2px solid var(--ink);
+      padding-top: 0.9rem;
+      min-width: 0;
+    }
+
+    .profile-eyebrow {
+      margin: 0 0 0.3rem;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      letter-spacing: 0.01em;
+      text-transform: none;
+      color: var(--muted);
+    }
+
+    .profile-title {
+      margin: 0 0 0.3rem;
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(1.6rem, 1.3rem + 1.4vw, 2.4rem);
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .profile-slug {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.92em;
+      color: var(--ink);
+      background-color: var(--panel);
+      border: 1px solid var(--rule);
+      padding: 1px 5px;
+    }
+
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.5rem;
+      margin: 1.1rem 0 0;
+      padding: 0;
+    }
+
+    .profile-stats > div {
+      border: 1px solid var(--rule);
+      background: var(--panel);
+      padding: 0.55rem 0.7rem;
+      min-width: 0;
+    }
+
+    .profile-stats dt {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      text-transform: none;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .profile-stats dd {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 1.05rem;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    #profile-languages { font-size: 0.82rem; }
+
+    .status-line {
+      margin: 1rem 0 0;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .profile-notice {
+      margin-top: 1rem;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--muted);
+      background: var(--panel);
+      font-size: 0.86rem;
+      color: var(--ink);
+    }
+
+    .profile-notice[data-tone="error"] {
+      border-left-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .profile-cards {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .profile-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.4rem 1rem;
+      align-items: start;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--rule);
+      min-width: 0;
+    }
+
+    .profile-card-title {
+      display: inline-block;
+      font-weight: 600;
+      color: var(--ink);
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+
+    .profile-card-title:hover { text-decoration: underline; }
+
+    .profile-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.35rem;
+      min-width: 0;
+    }
+
+    .profile-chip {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.04em;
+      text-transform: none;
+      padding: 0.1rem 0.4rem;
+      border: 1px solid var(--rule);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .profile-chip[data-tier="gold"],
+    .profile-chip[data-defense="recorded"] {
+      color: var(--verified);
+      border-color: var(--verified);
+    }
+
+    .profile-chip[data-tier="rejected"],
+    .profile-chip[data-defense="not_recorded"] {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .profile-score {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+      font-family: var(--mono);
+      white-space: nowrap;
+    }
+
+    .profile-score strong {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 400;
+    }
+
+    .profile-score span { font-size: 0.64rem; color: var(--muted); }
+
+    .profile-meta {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.9rem;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .profile-meta a { color: var(--ink); }
+
+    @media (max-width: 520px) {
+      .profile-card { grid-template-columns: minmax(0, 1fr); }
+      .profile-score { justify-self: start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+
+    .hidden { display: none !important; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#profile-main">Перейти к профилю</a>
+
+  <header class="profile-header">
+    <a class="profile-brand" href="/">MERILO</a>
+    <span class="profile-tag">Публичный профиль</span>
+    <span class="profile-tag">Только проверенные карточки</span>
+    <button id="theme-toggle" type="button" class="theme-toggle"
+            aria-label="Переключить тему" aria-pressed="false" title="Тема">
+      <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+      </svg>
+      <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+      </svg>
+    </button>
+  </header>
+
+  <main id="profile-main" class="profile-main">
+    <section class="profile-panel" aria-labelledby="profile-title">
+      <p class="profile-eyebrow">Верифицированный профиль</p>
+      <h1 id="profile-title" class="profile-title">Профиль кандидата</h1>
+      <p class="profile-slug">Идентификатор профиля: <code id="profile-slug">—</code></p>
+
+      <p id="profile-loading" class="status-line" role="status">Загрузка профиля…</p>
+      <div id="profile-error" class="profile-notice hidden" data-tone="error" role="alert"></div>
+
+      <dl id="profile-stats" class="profile-stats hidden">
+        <div>
+          <dt>Публичных карточек</dt>
+          <dd id="profile-card-count">0</dd>
+        </div>
+        <div>
+          <dt>Средний балл</dt>
+          <dd id="profile-avg-score">—</dd>
+        </div>
+        <div>
+          <dt>Защит записано</dt>
+          <dd id="profile-defense-count">0</dd>
+        </div>
+        <div>
+          <dt>Языки</dt>
+          <dd id="profile-languages">—</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="profile-panel" aria-labelledby="profile-cards-heading">
+      <h2 id="profile-cards-heading" class="profile-eyebrow">Публичные карточки</h2>
+      <div id="profile-empty" class="profile-notice hidden"></div>
+      <ul id="profile-cards" class="profile-cards hidden"></ul>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("theme-toggle");
+      if (!btn) return;
+      var sync = function () {
+        btn.setAttribute("aria-pressed", document.documentElement.getAttribute("data-theme") === "dark" ? "true" : "false");
+      };
+      sync();
+      btn.addEventListener("click", function () {
+        var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        try { localStorage.setItem("merilo.theme", next); } catch (e) {}
+        sync();
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      'use strict';
+
+      var DEFAULT_TITLES = {
+        recorded: 'Защита записана',
+        not_recorded: 'Защита не записана',
+        unavailable: 'Защита недоступна'
+      };
+
+      var loadingEl = document.getElementById('profile-loading');
+      var errorEl = document.getElementById('profile-error');
+      var statsEl = document.getElementById('profile-stats');
+      var slugEl = document.getElementById('profile-slug');
+      var cardCountEl = document.getElementById('profile-card-count');
+      var avgScoreEl = document.getElementById('profile-avg-score');
+      var defenseCountEl = document.getElementById('profile-defense-count');
+      var languagesEl = document.getElementById('profile-languages');
+      var emptyEl = document.getElementById('profile-empty');
+      var cardsEl = document.getElementById('profile-cards');
+
+      function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined && text !== null) node.textContent = String(text);
+        return node;
+      }
+
+      function setStatus(node, text) {
+        if (!node) return;
+        if (text) {
+          node.textContent = text;
+          node.classList.remove('hidden');
+        } else {
+          node.textContent = '';
+          node.classList.add('hidden');
+        }
+      }
+
+      function profileSlugFromPath() {
+        var match = /^\/p\/([^/]+)\/?$/.exec(window.location.pathname);
+        if (!match) return '';
+        try {
+          return decodeURIComponent(match[1]);
+        } catch (err) {
+          return '';
+        }
+      }
+
+      function tierKey(rawTier) {
+        var tier = String(rawTier || '');
+        if (tier.indexOf('Gold') !== -1) return 'gold';
+        if (tier.indexOf('Silver') !== -1) return 'silver';
+        if (tier.indexOf('Rejected') !== -1 || tier.indexOf('Blocked') !== -1) return 'rejected';
+        return 'neutral';
+      }
+
+      function safeCardUrl(card) {
+        var verifyUrl = typeof card.verify_url === 'string' ? card.verify_url : '';
+        if (verifyUrl.charAt(0) === '/' && verifyUrl.indexOf('//') !== 0) return verifyUrl;
+        var hash = typeof card.card_hash === 'string' ? card.card_hash : '';
+        return hash ? '/card/' + encodeURIComponent(hash) : '/';
+      }
+
+      function formatDate(raw) {
+        if (!raw) return '';
+        var parsed = new Date(raw);
+        if (isNaN(parsed.getTime())) return String(raw);
+        try {
+          return new Intl.DateTimeFormat('ru-RU', {
+            day: '2-digit', month: 'short', year: 'numeric'
+          }).format(parsed);
+        } catch (err) {
+          return parsed.toISOString().slice(0, 10);
+        }
+      }
+
+      function renderStats(cards) {
+        var scores = cards
+          .map(function (card) { return Number(card.total_score); })
+          .filter(function (value) { return isFinite(value); });
+        var defenses = cards.filter(function (card) {
+          return card.defense_status === 'recorded';
+        }).length;
+        var languages = [];
+        cards.forEach(function (card) {
+          var language = String(card.language || '').trim();
+          if (language && languages.indexOf(language) === -1) languages.push(language);
+        });
+        languages.sort();
+
+        cardCountEl.textContent = String(cards.length);
+        defenseCountEl.textContent = String(defenses);
+        if (scores.length) {
+          var average = scores.reduce(function (sum, value) { return sum + value; }, 0) / scores.length;
+          var rounded = Math.round(average * 10) / 10;
+          avgScoreEl.textContent = String(rounded).replace('.', ',');
+        } else {
+          avgScoreEl.textContent = '—';
+        }
+        languagesEl.textContent = languages.length ? languages.join(' · ') : '—';
+        statsEl.classList.remove('hidden');
+      }
+
+      function renderCard(card) {
+        var item = el('li', 'profile-card');
+
+        var main = el('div', null);
+        var title = el('a', 'profile-card-title', String(card.task_title || 'Без названия'));
+        title.href = safeCardUrl(card);
+        main.appendChild(title);
+
+        var chips = el('div', 'profile-chips');
+        var languageChip = el('span', 'profile-chip', String(card.language || 'python'));
+        chips.appendChild(languageChip);
+
+        var tierChip = el('span', 'profile-chip', String(card.badge_tier || '—'));
+        tierChip.setAttribute('data-tier', tierKey(card.badge_tier));
+        chips.appendChild(tierChip);
+
+        var defenseStatus = String(card.defense_status || 'unavailable');
+        var defenseChip = el('span', 'profile-chip', DEFAULT_TITLES[defenseStatus] || DEFAULT_TITLES.unavailable);
+        defenseChip.setAttribute('data-defense', defenseStatus);
+        chips.appendChild(defenseChip);
+        main.appendChild(chips);
+
+        var score = el('div', 'profile-score');
+        score.appendChild(el('strong', null, String(Number(card.total_score) || 0)));
+        score.appendChild(el('span', null, '/100'));
+
+        var meta = el('div', 'profile-meta');
+        var created = formatDate(card.created_at);
+        if (created) meta.appendChild(el('span', null, created));
+        var hash = String(card.card_hash || '');
+        if (hash) meta.appendChild(el('span', null, 'hash: ' + hash));
+
+        item.appendChild(main);
+        item.appendChild(score);
+        item.appendChild(meta);
+        return item;
+      }
+
+      function showEmpty(title, note) {
+        emptyEl.textContent = '';
+        emptyEl.appendChild(el('strong', null, title));
+        if (note) {
+          emptyEl.appendChild(el('span', null, ' ' + note));
+        }
+        emptyEl.classList.remove('hidden');
+      }
+
+      function render(cards) {
+        cardsEl.textContent = '';
+        renderStats(cards);
+
+        if (!cards.length) {
+          showEmpty('Пока нет публичных карточек.', 'Профиль существует, но ни одна карточка ещё не опубликована.');
+          return;
+        }
+
+        emptyEl.classList.add('hidden');
+        cardsEl.classList.remove('hidden');
+        cards.forEach(function (card) {
+          cardsEl.appendChild(renderCard(card));
+        });
+      }
+
+      function fail(message) {
+        setStatus(loadingEl, '');
+        setStatus(errorEl, message);
+      }
+
+      var slug = profileSlugFromPath();
+      slugEl.textContent = slug || '—';
+
+      if (!slug) {
+        fail('Некорректная ссылка на профиль: идентификатор отсутствует.');
+        showEmpty('Профиль не найден.', 'Проверьте ссылку — идентификатор профиля не распознан.');
+        return;
+      }
+
+      fetch('/api/users/' + encodeURIComponent(slug) + '/cards', {
+        headers: { Accept: 'application/json' }
+      }).then(function (response) {
+        if (response.status === 404) {
+          setStatus(loadingEl, '');
+          showEmpty('Профиль не найден.', 'Ссылка устарела или профиль не публиковался.');
+          return null;
+        }
+        if (!response.ok) {
+          throw new Error('profile request failed: ' + response.status);
+        }
+        return response.json();
+      }).then(function (cards) {
+        if (cards === null) return;
+        if (!Array.isArray(cards)) throw new Error('unexpected payload');
+        setStatus(loadingEl, '');
+        render(cards);
+      }).catch(function (err) {
+        fail('Не удалось загрузить профиль. Обновите страницу или повторите позже.');
+        showEmpty('Профиль временно недоступен.', 'Повторите попытку позже.');
+        if (window.console && window.console.warn) {
+          window.console.warn('profile_load_failed', err && err.message ? err.message : err);
+        }
+      });
+    }());
+  </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+# Build context hygiene: nothing secret, nothing stateful, nothing redundant
+# ever reaches the image. Anything needed at runtime is copied explicitly by
+# the Dockerfile (requirements.txt, backend/, static/, sql/, docs/).
+
+# --- Secrets: never, by any path -------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+
+# --- Local database state: the image always starts from an empty /app/data ---
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.sqlite3
+data/
+
+# --- Version control metadata ------------------------------------------------
+.git/
+.gitignore
+.gitattributes
+.github/
+.vscode/
+.idea/
+
+# --- Local-only agent and design workspaces ---------------------------------
+.design/
+.superpowers/
+.waylog/
+graphify-out/
+
+# --- Python caches & virtualenvs -------------------------------------------
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+build/
+dist/
+*.egg-info/
+
+# --- Tests, tooling and scratch artifacts ----------------------------------
+tests/
+scripts/
+screenshots/
+output/
+*.log
+
+# --- docs/: only the whitelisted evidence documents are useful at runtime ---
+# (Dockerfile copies docs/ because /evidence/{document} reads from it; the deck
+# sources and internal drafts below are excluded to keep the image small)
+docs/PROJECT_OVERVIEW.md
+docs/Отбор NFC Shymkent 2026.html
+docs/*.pdf
+docs/*.pptx
+docs/*.srt
+docs/decisions/
+docs/DECK_CONTENT.md
+docs/DEMO.md
+docs/FINAL_REPORT.md
+docs/JURY_QA.md
+docs/PITCH.md
+docs/PROBLEM.md
+docs/COMPETITORS.md
+docs/SUBMISSION.md
+docs/SUBMISSION_TEXT.md
+docs/UI_NOTES.md
+docs/VIDEO_SCRIPT.md
+docs/API.md
+docs/READINESS.md
+docs/FINAL_AUDIT.md
+
+# --- Markdown / docs: the image serves HTML, not prose ---------------------
+*.md
+
+# --- Dev-only dependency manifests ----------------------------------------
+requirements-dev.txt
+requirements.lock
+pyproject.toml

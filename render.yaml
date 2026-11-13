@@ -1,0 +1,45 @@
+# Render.com blueprint for Merilo — single-port monolith (Docker runtime).
+#
+# The image is built from ./Dockerfile and already bakes in
+#   MERILO_ENV=production, MERILO_DB_PATH=/app/data/merilo.db, PORT=8000
+# so the values below only make the contract explicit and let Render override
+# them without a rebuild.
+#
+# IMPORTANT (honest limitation): on the free plan the container filesystem is
+# ephemeral — SQLite (plus its -wal/-shm sidecars) is wiped on every redeploy or
+# restart, and cards/submissions issued earlier disappear. Persistent storage
+# requires a paid instance with an attached disk mounted at /app/data:
+#   disk:
+#     name: merilo-data
+#     mountPath: /app/data
+#     sizeGB: 1
+# Free instances also sleep after idle; the first request afterwards pays a cold
+# start (tens of seconds) while the lifespan initializes and seeds the database.
+services:
+  - type: web
+    name: merilo
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      # Production mode: MERILO_HMAC_SECRET becomes mandatory (fail fast).
+      - key: MERILO_ENV
+        value: production
+      # Signing key for Skill Cards and session tokens. Generated once by Render;
+      # rotating it invalidates signatures of already-issued cards.
+      - key: MERILO_HMAC_SECRET
+        generateValue: true
+      # Writable path (non-root user owns /app and /app/data).
+      - key: MERILO_DB_PATH
+        value: /app/data/merilo.db
+      # Empty key = deterministic offline fallback mode (still fully demoable).
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
+      # Verify endpoint: 20 requests / 60 s per IP.
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "20"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"

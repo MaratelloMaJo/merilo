@@ -1,0 +1,106 @@
+[
+  {
+    "language": "python",
+    "query": "Python разработчик",
+    "count": 1638,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=Python+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "javascript",
+    "query": "JavaScript разработчик",
+    "count": 1123,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=JavaScript+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "typescript",
+    "query": "TypeScript разработчик",
+    "count": 558,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=TypeScript+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "java",
+    "query": "Java разработчик",
+    "count": 686,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=Java+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "go",
+    "query": "Go разработчик",
+    "count": 409,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=Go+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "csharp",
+    "query": "C# разработчик",
+    "count": 395,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=C%23+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "cpp",
+    "query": "C++ разработчик",
+    "count": 926,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=C%2B%2B+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "c",
+    "query": "C разработчик",
+    "count": 2447,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=C+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "rust",
+    "query": "Rust разработчик",
+    "count": 52,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=Rust+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "ruby",
+    "query": "Ruby разработчик",
+    "count": 30,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=Ruby+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "php",
+    "query": "PHP разработчик",
+    "count": 390,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=PHP+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "kotlin",
+    "query": "Kotlin разработчик",
+    "count": 176,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=Kotlin+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  },
+  {
+    "language": "swift",
+    "query": "Swift разработчик",
+    "count": 78,
+    "date": "2026-11-13",
+    "url": "https://hh.kz/search/vacancy?text=Swift+%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA",
+    "status": "OK"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Merilo — Evidence Companion",
+  "short_name": "Merilo",
+  "version": "0.2.0",
+  "description": "Боковая панель Merilo: доказательства навыков и Developer DNA для открытой страницы GitHub, сохранение кандидата в рабочее пространство.",
+  "minimum_chrome_version": "116",
+  "action": { "default_title": "Открыть панель Merilo" },
+  "side_panel": { "default_path": "panel.html" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
+  "host_permissions": ["https://github.com/*", "http://127.0.0.1/*", "http://localhost/*"],
+  "optional_host_permissions": ["https://*/*"],
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'none'" }
+}

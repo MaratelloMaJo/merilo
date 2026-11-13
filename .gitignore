@@ -1,0 +1,99 @@
+# Секреты и локальные настройки
+.env
+.env.*
+# Шаблон без реальных значений должен попадать в репозиторий
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.ruff_cache/
+graphify-out/
+.coverage
+htmlcov/
+
+# Базы данных и локальное состояние
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.sqlite3
+
+# Node / Web
+node_modules/
+dist/
+build/
+.next/
+npm-debug.log*
+
+# Мобильная разработка
+.dart_tool/
+.gradle/
+Pods/
+
+# IDE и системные файлы
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+desktop.ini
+
+# Артефакты запусков и отчётов
+output/
+
+# Локальные логи
+*.log
+
+# Local tooling
+.claude/
+.vercel/
+
+
+# Local preview / test artifacts
+.screens/
+.pytest-tmp/
+.pytest-out.txt
+.chrome-tmp*/
+.tmp/
+
+# Binaries and presentation exports
+*.bak
+*.zip
+*.pdf
+*.pptx
+
+
+# Internal design prompt (not part of the product)
+docs/CANVA_CODE_PROMPT.md
+

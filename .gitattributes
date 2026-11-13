@@ -1,0 +1,4 @@
+# Shell scripts are executed inside Linux containers: force LF so a Windows
+# checkout with core.autocrlf=true does not produce a broken shebang.
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf

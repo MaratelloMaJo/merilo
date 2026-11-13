@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merilo — проверка кода, подписанная оценка, записанная защита</title>
+  <meta name="description" content="Merilo проверяет решение кандидата тремя шлюзами, выставляет оценку по взвешенной рубрике и подписывает карточку. 13 языков, разбор tree-sitter, HMAC-SHA256 и Ed25519.">
+  <meta name="theme-color" content="#F3EFE6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14130F" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="/static/merilo.css">
+  <script>
+    (function () {
+      try {
+        var forced = new URLSearchParams(location.search).get("theme");
+        var saved = localStorage.getItem("merilo.theme");
+        var theme = forced === "dark" || forced === "light"
+          ? forced
+          : (saved === "dark" || saved === "light"
+            ? saved
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#workbench">Перейти к стенду проверки</a>
+
+  <!-- ===================================================================== -->
+  <!-- MASTHEAD                                                              -->
+  <!-- ===================================================================== -->
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="/" aria-label="Merilo — на главную">
+        <span class="brand-name">MERILO</span>
+        <span class="brand-sub" data-i18n="brand.engine">Инструмент верификации кода</span>
+      </a>
+
+      <nav class="masthead-nav" aria-label="Разделы страницы">
+        <a class="nav-link" href="#workbench" data-i18n="nav.stand">Стенд</a>
+        <a class="nav-link" href="#how" data-i18n="nav.how">Как это работает</a>
+        <a class="nav-link" href="#faq" data-i18n="nav.faq">Вопросы</a>
+      </nav>
+
+      <div class="masthead-tools">
+        <button id="theme-toggle" type="button" class="icon-btn theme-toggle"
+                aria-label="Переключить тему" aria-pressed="false" title="Тема">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+          </svg>
+        </button>
+
+        <div class="lang-switch" role="group" aria-label="Язык интерфейса">
+          <button type="button" class="lang-btn" data-lang="ru" aria-label="RU — Русский язык">RU</button>
+          <button type="button" class="lang-btn" data-lang="kz" aria-label="КЗ — Қазақ тілі">КЗ</button>
+          <button type="button" class="lang-btn" data-lang="en" aria-label="EN — English">EN</button>
+        </div>
+
+        <a class="btn btn-header" href="/app" data-i18n="nav.portal">HR-Портал</a>
+
+        <div class="account">
+          <span id="user-avatar" class="avatar" aria-hidden="true">ЖМ</span>
+          <span class="account-name">
+            <span id="user-display-name">Жолынбек Марат</span>
+            <span id="user-display-role" class="account-role" data-i18n="role.candidateShort">Кандидат</span>
+          </span>
+          <button id="auth-modal-open-btn" type="button" class="btn btn-quiet btn-sm"
+                  title="Управление учетной записью" aria-label="Управление учетной записью">
+            <span data-i18n="user.account">Аккаунт</span>
+          </button>
+        </div>
+
+        <button id="mobile-menu-toggle" type="button" class="icon-btn mobile-menu-toggle"
+                aria-label="Открыть меню" aria-expanded="false" aria-controls="mobile-menu">
+          <span class="menu-line" aria-hidden="true"></span>
+          <span class="menu-line" aria-hidden="true"></span>
+          <span class="menu-line" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="mobile-menu" hidden>
+      <nav class="mobile-menu-nav" aria-label="Мобильное меню">
+        <a class="mobile-nav-link" href="#workbench" data-i18n="nav.stand">Стенд</a>
+        <a class="mobile-nav-link" href="#how" data-i18n="nav.how">Как это работает</a>
+        <a class="mobile-nav-link" href="#faq" data-i18n="nav.faq">Вопросы</a>
+        <a class="mobile-nav-link" href="/help" data-i18n="nav.help">Помощь</a>
+        <a class="mobile-nav-link mobile-nav-portal" href="/app" data-i18n="nav.portal">HR-Портал →</a>
+        <button type="button" class="mobile-nav-link mobile-nav-account" data-auth-open>
+          <span data-i18n="user.account">Аккаунт</span>
+        </button>
+      </nav>
+      <div class="mobile-menu-lang lang-switch" role="group" aria-label="Язык интерфейса">
+        <button type="button" class="lang-btn" data-lang="ru" aria-label="RU — Русский язык">RU</button>
+        <button type="button" class="lang-btn" data-lang="kz" aria-label="КЗ — Қазақ тілі">КЗ</button>
+        <button type="button" class="lang-btn" data-lang="en" aria-label="EN — English">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="view-candidate">
+
+      <!-- ================================================================= -->
+      <!-- MEASUREMENT HEADER                                                -->
+      <!-- ================================================================= -->
+      <section class="hero wrap" aria-labelledby="hero-title">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="mono-label">Merilo · измерение кода · 2026</p>
+            <h1 id="hero-title" class="hero-title">Код проверен.<br>Оценка подписана.<br>Ответы записаны.</h1>
+            <p class="hero-thesis">
+              Merilo прогоняет решение через три шлюза: разбор синтаксического дерева,
+              проверку безопасности и оценку по взвешенной рубрике. Результат — карточка
+              с подписью и публичной защитой кандидата. Не «рейтинг разработчика»,
+              а измерение конкретной работы.
+            </p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#workbench">Проверить код</a>
+              <a class="btn-link" href="#how">Как это работает ↓</a>
+            </div>
+            <p class="facts-note">
+              Проверка открыта без регистрации. Карточка публикуется только после
+              успешной проверки и остаётся доступной по ссылке.
+            </p>
+          </div>
+
+          <aside class="facts" aria-labelledby="facts-title">
+            <p class="facts-title mono-label" id="facts-title">Три измерения стенда</p>
+            <div class="fact">
+              <span class="fact-label">Тесты</span>
+              <span class="fact-value"><strong>397</strong> в наборе</span>
+            </div>
+            <div class="fact">
+              <span class="fact-label">Подпись</span>
+              <span class="fact-value">HMAC-SHA256 · Ed25519</span>
+            </div>
+            <div class="fact">
+              <span class="fact-label">Языки</span>
+              <span class="fact-value"><strong>13</strong> · tree-sitter</span>
+            </div>
+            <div class="fact">
+              <span class="fact-label">Калибровка</span>
+              <span class="fact-value">Python · JavaScript</span>
+            </div>
+            <p class="facts-note">
+              Семантическая рубрика откалибрована сначала для Python и JavaScript.
+              Остальные 11 языков проходят синтаксический и защитный шлюзы.
+            </p>
+          </aside>
+        </div>
+
+        <!-- Calibration strip #1: the 13 languages as a ruler. -->
+        <div class="calibration" aria-labelledby="calibration-title-hero">
+          <div class="calibration-head">
+            <p class="mono-label" id="calibration-title-hero">Калибровка языков · 13 разборов</p>
+            <p class="mono-label">Выбрано: <strong id="calibration-selected-hero">Python</strong></p>
+          </div>
+          <ol class="ruler" id="calibration-hero" aria-label="Языки решения">
+            <li class="ruler-item" data-lang="python"><button type="button" class="ruler-btn" data-lang="python" aria-label="PY — Python" aria-pressed="true"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">PY</span></button></li>
+            <li class="ruler-item" data-lang="javascript"><button type="button" class="ruler-btn" data-lang="javascript" aria-label="JS — JavaScript" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">JS</span></button></li>
+            <li class="ruler-item" data-lang="typescript"><button type="button" class="ruler-btn" data-lang="typescript" aria-label="TS — TypeScript" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">TS</span></button></li>
+            <li class="ruler-item" data-lang="java"><button type="button" class="ruler-btn" data-lang="java" aria-label="JV — Java" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">JV</span></button></li>
+            <li class="ruler-item" data-lang="go"><button type="button" class="ruler-btn" data-lang="go" aria-label="Go" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">GO</span></button></li>
+            <li class="ruler-item" data-lang="csharp"><button type="button" class="ruler-btn" data-lang="csharp" aria-label="C#" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">C#</span></button></li>
+            <li class="ruler-item" data-lang="cpp"><button type="button" class="ruler-btn" data-lang="cpp" aria-label="C++" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">C++</span></button></li>
+            <li class="ruler-item" data-lang="c"><button type="button" class="ruler-btn" data-lang="c" aria-label="C" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">C</span></button></li>
+            <li class="ruler-item" data-lang="rust"><button type="button" class="ruler-btn" data-lang="rust" aria-label="RS — Rust" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">RS</span></button></li>
+            <li class="ruler-item" data-lang="ruby"><button type="button" class="ruler-btn" data-lang="ruby" aria-label="RB — Ruby" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">RB</span></button></li>
+            <li class="ruler-item" data-lang="php"><button type="button" class="ruler-btn" data-lang="php" aria-label="PHP" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">PHP</span></button></li>
+            <li class="ruler-item" data-lang="kotlin"><button type="button" class="ruler-btn" data-lang="kotlin" aria-label="KT — Kotlin" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">KT</span></button></li>
+            <li class="ruler-item" data-lang="swift"><button type="button" class="ruler-btn" data-lang="swift" aria-label="SW — Swift" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">SW</span></button></li>
+          </ol>
+          <p class="calibration-note">
+            <span>Один язык на запуск. В режиме «Свой код» язык выбирается на линейке.</span>
+            <span>Рубрика: Python и JavaScript первыми</span>
+          </p>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- WORKBENCH                                                         -->
+      <!-- ================================================================= -->
+      <section id="workbench" class="workbench-section wrap" aria-labelledby="workbench-title">
+        <div class="section-bar">
+          <h2 id="workbench-title">Стенд проверки</h2>
+          <p class="panel-note">Кейс → три шлюза → подписанная карточка → защита</p>
+        </div>
+
+        <!-- Empty state: /api/tasks returned an empty list -->
+        <div id="tasks-empty-state" class="empty-state hidden" role="status" aria-live="polite">
+          <h2>Задачи пока не опубликованы</h2>
+          <p>Сервер вернул пустой список кейсов. Опубликуйте микро-кейс в HR-портале или повторите загрузку.</p>
+          <button id="tasks-empty-retry" type="button" class="btn btn-secondary btn-sm">
+            <span aria-hidden="true">↻</span> Повторить загрузку
+          </button>
+        </div>
+
+        <div class="workbench-grid">
+
+          <!-- LEFT COLUMN: task specification -->
+          <div id="task-spec-column" class="task-column">
+
+            <div class="panel">
+              <div class="panel-head">
+                <h3 class="panel-title" data-i18n="task.panelTitle">Инженерная задача</h3>
+                <span id="tasks-count-badge" class="panel-note">8 задач</span>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="language-select">Язык решения</label>
+                <select id="language-select" class="select">
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="java">Java</option>
+                  <option value="go">Go</option>
+                  <option value="csharp">C#</option>
+                  <option value="cpp">C++</option>
+                  <option value="c">C</option>
+                  <option value="rust">Rust</option>
+                  <option value="ruby">Ruby</option>
+                  <option value="php">PHP</option>
+                  <option value="kotlin">Kotlin</option>
+                  <option value="swift">Swift</option>
+                </select>
+                <p id="language-lock-hint" class="field-hint">
+                  Язык фиксируется выбранной задачей.
+                </p>
+              </div>
+
+              <div id="task-tabs" class="task-tabs" aria-label="Задачи по языкам программирования"></div>
+            </div>
+
+            <div class="panel panel--rule">
+              <div class="task-meta">
+                <span id="task-company-badge" class="tag tag--accent">NeoBank Kaspi Ecosystem</span>
+                <span id="task-difficulty-badge" class="tag">Junior+ / Middle</span>
+                <span id="task-stack-badge" class="tag">Python 3.11, SQLite</span>
+              </div>
+
+              <h2 id="task-title" class="task-title">FinTech — Kaspi-style Transfer API</h2>
+              <p id="task-description" class="task-description">
+                Платежный микросервис проводит транзакцию между счетами пользователей.
+                Текущая реализация содержит критическую уязвимость SQL Injection
+                (конкатенация f-строк в SQL) и логическую дыру: отсутствует валидация
+                на положительную сумму (amount &lt;= 0).
+              </p>
+
+              <div class="rubric">
+                <div class="panel-head">
+                  <span class="panel-title" data-i18n="rubric.title">Критерии оценки решения</span>
+                  <span class="panel-note" data-i18n="rubric.matrix">Взвешенная матрица 100%</span>
+                </div>
+
+                <div class="rubric-row">
+                  <span class="weight">30%</span>
+                  <div>
+                    <div class="rubric-name" data-i18n="rubric.cleanTitle">Чистота кода &amp; PEP8</div>
+                    <div id="rubric-clean-code" class="rubric-detail">
+                      Параметризованные запросы (? или $1), понятный нейминг, type hints.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rubric-row">
+                  <span class="weight">40%</span>
+                  <div>
+                    <div class="rubric-name" data-i18n="rubric.archTitle">Архитектура &amp; Безопасность</div>
+                    <div id="rubric-architecture" class="rubric-detail">
+                      Атомарность транзакций, корректная обработка исключений, отсутствие уязвимостей.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rubric-row">
+                  <span class="weight">30%</span>
+                  <div>
+                    <div class="rubric-name" data-i18n="rubric.edgeTitle">Граничные условия (Edge Cases)</div>
+                    <div id="rubric-edge-cases" class="rubric-detail">
+                      Проверка amount &lt;= 0, sender_balance &gt;= amount, проверка счетов.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <details class="buggy">
+                <summary>
+                  <span data-i18n="buggy.title">Исходный код с ошибкой (solution_buggy.py)</span>
+                </summary>
+                <div class="buggy-body">
+                  <button id="copy-buggy-code-btn" type="button" class="btn btn-secondary btn-sm buggy-copy" data-i18n="buggy.copy">
+                    Копировать в редактор
+                  </button>
+                  <pre id="task-buggy-code"># Загрузка кода с ошибкой...</pre>
+                </div>
+              </details>
+
+              <p class="field-hint" style="margin-top: 0.8rem;">
+                Шлюзы: AST · Security Shield · HMAC-SHA256 · v1.1
+              </p>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: verification workbench -->
+          <div id="workbench-column" class="workbench-column">
+
+            <nav class="journey" aria-label="Шаги проверки">
+              <ol>
+                <li id="journey-step-1" data-state="active" aria-current="step" class="journey-step">
+                  <span class="journey-index" aria-hidden="true">1</span>
+                  <span>Выбери кейс</span>
+                </li>
+                <li id="journey-step-2" data-state="todo" class="journey-step">
+                  <span class="journey-index" aria-hidden="true">2</span>
+                  <span>Проверь код</span>
+                </li>
+                <li id="journey-step-3" data-state="todo" class="journey-step">
+                  <span class="journey-index" aria-hidden="true">3</span>
+                  <span>Получи карточку</span>
+                </li>
+              </ol>
+            </nav>
+
+            <div class="workbench">
+              <div class="workbench-row">
+                <div class="field">
+                  <label for="candidate-name-input" class="field-label" data-i18n="form.candidateName">
+                    ФИО кандидата для сертификата:
+                  </label>
+                  <input type="text" id="candidate-name-input" class="input"
+                         value="Жолынбек Марат"
+                         data-i18n-placeholder="form.namePlaceholder" placeholder="Имя и фамилия кандидата...">
+                </div>
+                <span class="env-note" data-i18n="form.env">Среда: Python 3.11</span>
+              </div>
+
+              <!-- Own-code mode: a free-standing submission without a catalogue task -->
+              <div id="own-code-panel" class="own-code hidden">
+                <div class="own-code-head">
+                  <div>
+                    <div class="own-code-title">Свой код — свободный кейс</div>
+                    <p class="own-code-note">
+                      Проверка без условия задачи: выберите язык и отправьте собственное решение.
+                    </p>
+                  </div>
+                  <span class="tag tag--accent">own-code</span>
+                </div>
+
+                <div class="field">
+                  <label for="own-code-language" class="field-label">Язык собственного кода</label>
+                  <select id="own-code-language" class="select">
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="java">Java</option>
+                    <option value="go">Go</option>
+                    <option value="csharp">C#</option>
+                    <option value="cpp">C++</option>
+                    <option value="c">C</option>
+                    <option value="rust">Rust</option>
+                    <option value="ruby">Ruby</option>
+                    <option value="php">PHP</option>
+                    <option value="kotlin">Kotlin</option>
+                    <option value="swift">Swift</option>
+                  </select>
+                </div>
+
+                <div class="field" style="margin-top: 0.7rem;">
+                  <label for="own-code-editor" class="field-label">Код решения</label>
+                  <textarea id="own-code-editor" class="textarea" rows="12" spellcheck="false"
+                            placeholder="Вставьте собственный код: он будет проверен тремя шлюзами без условия задачи."></textarea>
+                </div>
+              </div>
+
+              <!-- Professional solution templates -->
+              <div id="presets-block" class="presets">
+                <div class="presets-head">
+                  <span class="panel-title" data-i18n="presets.title">Шаблоны инженерных решений:</span>
+                  <span class="panel-note" data-i18n="presets.hint">Быстрый выбор кода</span>
+                </div>
+
+                <div class="preset-grid">
+                  <button id="preset-ideal-btn" type="button" aria-describedby="presets-help" class="preset-btn">
+                    <span data-i18n="preset.ideal">Эталон (Clean &amp; Secure)</span>
+                  </button>
+                  <button id="preset-vulnerable-btn" type="button" aria-describedby="presets-help" class="preset-btn">
+                    <span data-i18n="preset.vulnerable">Черновик с дефектом (Vulnerable)</span>
+                  </button>
+                  <button id="preset-injection-btn" type="button" aria-describedby="presets-help" class="preset-btn preset-btn--danger">
+                    <span data-i18n="preset.injection">Тест на инъекцию (Security Probe)</span>
+                  </button>
+                  <button id="preset-reset-btn" type="button" class="preset-btn">
+                    <span aria-hidden="true">↺</span>
+                    <span data-i18n="preset.reset">Сбросить код</span>
+                  </button>
+                </div>
+
+                <p id="presets-help" class="sr-only">
+                  Эталон — безопасное решение без уязвимостей. Черновик — частичное решение
+                  с дефектом. Тест на инъекцию — образец с попыткой подмены инструкций для
+                  проверки второго шлюза. Сброс — вернуть исходный код с ошибкой.
+                </p>
+                <p id="presets-unavailable-note" class="presets-note hidden"></p>
+              </div>
+
+              <!-- Code editor -->
+              <div id="editor-frame" class="editor-frame">
+                <div class="editor-bar">
+                  <span><span class="editor-name" id="editor-filename">solution.py</span> · черновик</span>
+                  <span>
+                    <span id="editor-lines-count" class="editor-lines" data-i18n="editor.linesZero">0 строк</span>
+                    <button id="editor-clear-btn" type="button" class="btn btn-quiet btn-sm" data-i18n="editor.clear">Очистить</button>
+                  </span>
+                </div>
+                <label for="code-editor" class="sr-only">Код решения на Python</label>
+                <textarea id="code-editor" class="editor" rows="12" spellcheck="false"
+                          aria-describedby="editor-lines-count"
+                          data-i18n-placeholder="editor.placeholder"
+                          placeholder="# Введите Python-код реализации задачи или воспользуйтесь шаблонами выше..."></textarea>
+              </div>
+
+              <!-- AI disclosure + portable candidate link -->
+              <div class="workbench-foot">
+                <label for="ai-assisted" class="check-row">
+                  <input type="checkbox" id="ai-assisted">
+                  <span data-i18n="ai.label">Я использовал AI при подготовке решения</span>
+                </label>
+
+                <div class="link-tools">
+                  <button id="candidate-link" type="button" class="btn btn-secondary btn-sm">
+                    <span aria-hidden="true">⧉</span>
+                    <span data-i18n="candidate.copyLink">Ссылка для кандидата</span>
+                  </button>
+                  <span id="candidate-link-status" role="status" aria-live="polite" class="status-line"></span>
+                  <label for="candidate-link-fallback" class="sr-only">Ссылка для кандидата</label>
+                  <input id="candidate-link-fallback" type="text" readonly hidden
+                         class="input" style="margin-top: 0.3rem;">
+                </div>
+              </div>
+
+              <div style="margin-top: 0.9rem;">
+                <button id="verify-submit-btn" type="button" class="btn btn-primary" style="width: 100%;">
+                  <span id="verify-cta-spinner" class="spinner hidden" aria-hidden="true"></span>
+                  <span id="verify-cta-icon" aria-hidden="true">→</span>
+                  <span id="verify-cta-label" data-i18n="verify.cta">Запустить трёхшлюзовую верификацию</span>
+                </button>
+
+                <div id="verify-error-panel" class="verify-error hidden" role="alert" aria-live="assertive">
+                  <div class="verify-error-title">Не удалось выполнить проверку</div>
+                  <p id="verify-error-text" class="verify-error-text"></p>
+                  <button id="verify-retry-btn" type="button" class="btn btn-secondary btn-sm">
+                    <span aria-hidden="true">↻</span> Повторить
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3-gate pipeline -->
+            <div id="gate-pipeline-card" class="gates">
+              <div class="gates-head">
+                <span class="panel-title" data-i18n="pipeline.title">Конвейер верификации</span>
+                <span id="pipeline-status-text" role="status" aria-live="polite" class="pipeline-status" data-i18n="pipeline.waiting">
+                  Ожидание запуска аудита
+                </span>
+              </div>
+
+              <div class="gate-grid">
+                <div id="gate-1-box" data-state="pending" role="group" aria-label="Шлюз 1 — AST Syntax Barrier" class="gate-box">
+                  <div class="gate-top">
+                    <span class="gate-code">GATE 1</span>
+                    <span id="gate-1-icon" class="gate-icon" aria-hidden="true">○</span>
+                  </div>
+                  <div class="gate-name" data-i18n="gate1.name">AST Syntax Barrier</div>
+                  <div class="gate-desc" data-i18n="gate1.desc">Парсинг синтаксического дерева кода</div>
+                  <div id="gate-1-result" class="gate-result" data-i18n="gate.pending">Ожидает запуска</div>
+                </div>
+
+                <div id="gate-2-box" data-state="pending" role="group" aria-label="Шлюз 2 — Security &amp; Integrity Shield" class="gate-box">
+                  <div class="gate-top">
+                    <span class="gate-code">GATE 2</span>
+                    <span id="gate-2-icon" class="gate-icon" aria-hidden="true">○</span>
+                  </div>
+                  <div class="gate-name" data-i18n="gate2.name">Security &amp; Integrity Shield</div>
+                  <div class="gate-desc" data-i18n="gate2.desc">Контроль безопасности и целостности</div>
+                  <div id="gate-2-result" class="gate-result" data-i18n="gate.pending">Ожидает запуска</div>
+                </div>
+
+                <div id="gate-3-box" data-state="pending" class="gate-box">
+                  <div class="gate-top">
+                    <span class="gate-code">GATE 3</span>
+                    <span id="gate-3-icon" class="gate-icon" aria-hidden="true">○</span>
+                  </div>
+                  <div class="gate-name" data-i18n="gate3.name">AI Audit &amp; HMAC Signing</div>
+                  <div class="gate-desc" data-i18n="gate3.desc">Скоринг компетенций и подпись HMAC</div>
+                  <div id="gate-3-result" class="gate-result" data-i18n="gate.pending">Ожидает запуска</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Audit result -->
+            <div id="audit-result-card" role="region" aria-label="Результат верификации" aria-live="polite" class="result hidden">
+              <div id="result-outcome-banner" class="outcome hidden"></div>
+
+              <div class="result-head">
+                <div>
+                  <p class="panel-title result-kicker" data-i18n="result.title">Результат верификации решения</p>
+                  <div class="result-tags">
+                    <span id="result-badge-tier" class="tier-stamp">Gold Verified</span>
+                    <span id="result-status-pill" class="status-pill">Status: VERIFIED</span>
+                  </div>
+                </div>
+
+                <div class="score" aria-label="Итоговый балл">
+                  <span id="result-score-counter" class="score-value">0</span>
+                  <span class="score-total">/100</span>
+                </div>
+              </div>
+
+              <div id="result-dimensions" class="dimensions">
+                <div class="dim">
+                  <div class="dim-head">
+                    <span class="dim-label" data-i18n="score.clean">Чистота кода &amp; PEP8 (30%)</span>
+                    <span id="score-clean-code-val" class="dim-value">0%</span>
+                  </div>
+                  <div class="meter"><span id="score-clean-code-bar" class="meter-fill" style="width: 0%"></span></div>
+                </div>
+
+                <div class="dim">
+                  <div class="dim-head">
+                    <span class="dim-label" data-i18n="score.arch">Архитектура &amp; Безопасность (40%)</span>
+                    <span id="score-arch-val" class="dim-value">0%</span>
+                  </div>
+                  <div class="meter"><span id="score-arch-bar" class="meter-fill is-verified" style="width: 0%"></span></div>
+                </div>
+
+                <div class="dim">
+                  <div class="dim-head">
+                    <span class="dim-label" data-i18n="score.edge">Граничные условия &amp; Исключения (30%)</span>
+                    <span id="score-edge-val" class="dim-value">0%</span>
+                  </div>
+                  <div class="meter"><span id="score-edge-bar" class="meter-fill is-accent" style="width: 0%"></span></div>
+                </div>
+              </div>
+
+              <div class="summary">
+                <p class="panel-title" data-i18n="result.summaryTitle">Резюме для нанимающего руководителя:</p>
+                <p id="result-executive-summary">
+                  <span data-i18n="result.summaryLoading">Оценка формируется...</span>
+                </p>
+              </div>
+
+              <div class="provenance">
+                <span aria-hidden="true">◇</span>
+                <span id="result-provenance">Источник оценки не указан</span>
+              </div>
+
+              <div class="result-foot">
+                <div class="hash-group">
+                  <span class="hash-label" data-i18n="result.hashLabel">Хэш сертификата:</span>
+                  <span id="result-card-hash" class="hash-value">0x...</span>
+                  <span id="result-signature-badge" class="sig-pill is-signed">✓ HMAC Signed</span>
+                </div>
+
+                <a id="result-open-card-btn" href="/card/demo2026kz01" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+                  <span id="result-open-card-label" data-i18n="result.openCard">Открыть карточку</span>
+                  <span data-open-card-icon class="row-link-arrow" aria-hidden="true">↗</span>
+                </a>
+              </div>
+
+              <div id="defense-panel" class="defense hidden" aria-labelledby="defense-panel-heading">
+                <div class="defense-head">
+                  <h3 id="defense-panel-heading" class="panel-title">Защита решения</h3>
+                  <span id="defense-badge" class="defense-badge is-pending">Ожидает защиты</span>
+                </div>
+                <p class="defense-intro">
+                  Ответьте на три вопроса о собственном решении. Защита записывается один раз
+                  и подписывается вместе с карточкой.
+                </p>
+
+                <div id="defense-answers" class="defense-answers">
+                  <div>
+                    <label for="defense-answer-1" id="defense-q1" class="defense-question">Вопрос 1</label>
+                    <textarea id="defense-answer-1" class="textarea" data-defense-answer="1" rows="3" minlength="20" maxlength="1200"></textarea>
+                  </div>
+                  <div>
+                    <label for="defense-answer-2" id="defense-q2" class="defense-question">Вопрос 2</label>
+                    <textarea id="defense-answer-2" class="textarea" data-defense-answer="2" rows="3" minlength="20" maxlength="1200"></textarea>
+                  </div>
+                  <div>
+                    <label for="defense-answer-3" id="defense-q3" class="defense-question">Вопрос 3</label>
+                    <textarea id="defense-answer-3" class="textarea" data-defense-answer="3" rows="3" minlength="20" maxlength="1200"></textarea>
+                  </div>
+                </div>
+
+                <div class="defense-actions">
+                  <button id="defense-seal" type="button" class="btn btn-primary btn-sm">
+                    <span aria-hidden="true">▣</span>
+                    <span data-i18n="defense.seal">Зафиксировать защиту</span>
+                  </button>
+                  <p id="defense-status" role="status" aria-live="polite" class="defense-status"></p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Calibration strip #2: mirrors the workbench selection. -->
+        <div class="calibration" aria-labelledby="calibration-title-workbench">
+          <div class="calibration-head">
+            <p class="mono-label" id="calibration-title-workbench">Язык запуска · линейка</p>
+            <p class="mono-label">Выбрано: <strong id="calibration-selected-workbench">Python</strong></p>
+          </div>
+          <ol class="ruler" id="calibration-workbench" aria-label="Выбор языка запуска">
+            <li class="ruler-item" data-lang="python"><button type="button" class="ruler-btn" data-lang="python" aria-label="PY — Python" aria-pressed="true"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">PY</span></button></li>
+            <li class="ruler-item" data-lang="javascript"><button type="button" class="ruler-btn" data-lang="javascript" aria-label="JS — JavaScript" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">JS</span></button></li>
+            <li class="ruler-item" data-lang="typescript"><button type="button" class="ruler-btn" data-lang="typescript" aria-label="TS — TypeScript" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">TS</span></button></li>
+            <li class="ruler-item" data-lang="java"><button type="button" class="ruler-btn" data-lang="java" aria-label="JV — Java" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">JV</span></button></li>
+            <li class="ruler-item" data-lang="go"><button type="button" class="ruler-btn" data-lang="go" aria-label="Go" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">GO</span></button></li>
+            <li class="ruler-item" data-lang="csharp"><button type="button" class="ruler-btn" data-lang="csharp" aria-label="C#" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">C#</span></button></li>
+            <li class="ruler-item" data-lang="cpp"><button type="button" class="ruler-btn" data-lang="cpp" aria-label="C++" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">C++</span></button></li>
+            <li class="ruler-item" data-lang="c"><button type="button" class="ruler-btn" data-lang="c" aria-label="C" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">C</span></button></li>
+            <li class="ruler-item" data-lang="rust"><button type="button" class="ruler-btn" data-lang="rust" aria-label="RS — Rust" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">RS</span></button></li>
+            <li class="ruler-item" data-lang="ruby"><button type="button" class="ruler-btn" data-lang="ruby" aria-label="RB — Ruby" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">RB</span></button></li>
+            <li class="ruler-item" data-lang="php"><button type="button" class="ruler-btn" data-lang="php" aria-label="PHP" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">PHP</span></button></li>
+            <li class="ruler-item" data-lang="kotlin"><button type="button" class="ruler-btn" data-lang="kotlin" aria-label="KT — Kotlin" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">KT</span></button></li>
+            <li class="ruler-item" data-lang="swift"><button type="button" class="ruler-btn" data-lang="swift" aria-label="SW — Swift" aria-pressed="false"><span class="ruler-tick" aria-hidden="true"></span><span class="ruler-label">SW</span></button></li>
+          </ol>
+          <p class="calibration-note">
+            <span>Линейка показывает язык текущего запуска. В режиме «Свой код» она переключает язык.</span>
+            <span>13 языков · tree-sitter</span>
+          </p>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- HOW IT WORKS                                                      -->
+      <!-- ================================================================= -->
+      <section id="how" class="section wrap" aria-labelledby="how-title">
+        <div class="section-head">
+          <p class="section-index">01</p>
+          <div>
+            <h2 id="how-title" class="section-title">Как это работает</h2>
+            <p class="section-lede">
+              Три шлюза идут последовательно. Остановка на любом из них — тоже результат:
+              он показывается текстом и не превращается в балл.
+            </p>
+          </div>
+        </div>
+
+        <div class="how-grid">
+          <article class="how-step">
+            <div class="how-step-top">
+              <span class="how-step-index">GATE 1</span>
+              <span class="mono-label">синтаксис</span>
+            </div>
+            <h3>Разбор дерева</h3>
+            <p>
+              Код разбирается парсером tree-sitter для выбранного языка. Ошибка синтаксиса
+              останавливает проверку до оценки.
+            </p>
+            <dl>
+              <dt>Что проверяется</dt>
+              <dd>Дерево разбора, а не регулярные выражения</dd>
+              <dt>Результат</dt>
+              <dd>Прошёл / синтаксическая ошибка</dd>
+            </dl>
+          </article>
+
+          <article class="how-step">
+            <div class="how-step-top">
+              <span class="how-step-index">GATE 2</span>
+              <span class="mono-label">безопасность</span>
+            </div>
+            <h3>Защита и целостность</h3>
+            <p>
+              Проверка ищет попытки подменить инструкции оценки и опасные конструкции.
+              При срабатывании балл не начисляется.
+            </p>
+            <dl>
+              <dt>Что проверяется</dt>
+              <dd>Prompt injection, обход правил, опасные приёмы</dd>
+              <dt>Результат</dt>
+              <dd>Чисто / заблокировано</dd>
+            </dl>
+          </article>
+
+          <article class="how-step">
+            <div class="how-step-top">
+              <span class="how-step-index">GATE 3</span>
+              <span class="mono-label">оценка</span>
+            </div>
+            <h3>Оценка и подпись</h3>
+            <p>
+              Решение оценивается по трём весам: 30 / 40 / 30. Карточка получает
+              HMAC-SHA256 и переносимый манифест с подписью Ed25519.
+            </p>
+            <dl>
+              <dt>Что проверяется</dt>
+              <dd>Чистота, архитектура, граничные условия</dd>
+              <dt>Результат</dt>
+              <dd>Балл 0–100, тир, подписанный документ</dd>
+            </dl>
+          </article>
+        </div>
+
+        <div class="how-defense">
+          <div>
+            <p class="mono-label">Четвёртый шаг</p>
+            <h3>Защита решения</h3>
+          </div>
+          <p class="lede">
+            После успешной проверки кандидат отвечает на три вопроса о своём коде.
+            Ответы записываются один раз, получают собственный хэш и входят в карточку.
+            Это не экзамен с правильными ответами — это письменное объяснение работы.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- FOR CANDIDATES                                                    -->
+      <!-- ================================================================= -->
+      <section id="candidate" class="section wrap" aria-labelledby="candidate-title">
+        <div class="section-head">
+          <p class="section-index">02</p>
+          <div>
+            <h2 id="candidate-title" class="section-title">Кандидату</h2>
+            <p class="section-lede">
+              Вместо «проверьте меня по резюме» — конкретная работа с подписанным
+              результатом и вашим объяснением.
+            </p>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <ul class="checklist">
+            <li>Выберите кейс или загрузите свой код в одном из 13 языков.</li>
+            <li>Получите балл по трём весам и текст резюме для нанимающего руководителя.</li>
+            <li>Запишите защиту: три ответа о вашем решении, один раз и навсегда.</li>
+            <li>Поделитесь карточкой, манифестом или SVG-бейджем. Код не публикуется.</li>
+          </ul>
+
+          <div>
+            <p class="lede">
+              Карточка показывает, что именно измерено: язык, кейс, критерии, подпись,
+              защита. Она не заменяет собеседование и не обещает «объективную оценку
+              человека» — только проверяемую оценку конкретного кода.
+            </p>
+            <p>
+              <a class="btn btn-secondary" href="#workbench">Открыть стенд проверки</a>
+            </p>
+            <p class="facts-note">
+              Проверка бесплатна. Защита доступна сразу после успешной проверки в той же вкладке.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- FOR COMPANIES                                                     -->
+      <!-- ================================================================= -->
+      <section id="companies" class="section wrap" aria-labelledby="companies-title">
+        <div class="section-head">
+          <p class="section-index">03</p>
+          <div>
+            <h2 id="companies-title" class="section-title">Компаниям</h2>
+            <p class="section-lede">
+              Один стенд для технического скрининга. Цены указаны в тенге.
+            </p>
+          </div>
+        </div>
+
+        <div class="pricing">
+          <div class="price-row">
+            <div>
+              <h3>За карточку</h3>
+              <p class="price-detail">Одна проверка: три шлюза, подписанная карточка, защита кандидата, бейдж и манифест.</p>
+            </div>
+            <div class="price">3 000 ₸<small>карточка</small></div>
+          </div>
+
+          <div class="price-row">
+            <div>
+              <h3>В месяц</h3>
+              <p class="price-detail">12 карточек в календарный месяц, один кейс на выбор, короткий список и экспорт сравнения.</p>
+            </div>
+            <div class="price">29 000 ₸<small>месяц</small></div>
+          </div>
+
+          <div class="price-row">
+            <div>
+              <h3>Семестр буткемпа</h3>
+              <p class="price-detail">До 60 карточек на поток, кейс под программу, сводка по группе и защита каждого выпускника.</p>
+            </div>
+            <div class="price">149 000 ₸<small>семестр</small></div>
+          </div>
+        </div>
+
+        <p class="facts-note" style="margin-top: 1rem;">
+          Спрос на Python: <strong>1 638</strong> вакансий по запросу «Python разработчик» на hh.kz,
+          13.11.2026 (<a href="/evidence/labor_market.json">источник, 13 языков</a>). Это снимок поиска,
+          а не размер рынка Merilo.
+        </p>
+        <p class="facts-note">
+          Диагностический пилот для одной компании — 0 ₸: 5 карточек в обмен на 20-минутное интервью
+          и базовый замер времени скрининга. Остальные цены — гипотезы оффера, а не проверенный прайс.
+        </p>
+        <p style="margin-top: 1rem;">
+          <a class="btn btn-primary" href="/evidence/pilot">Запросить пилот</a>
+        </p>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- BOUNDARIES                                                        -->
+      <!-- ================================================================= -->
+      <section id="boundaries" class="section wrap" aria-labelledby="boundaries-title">
+        <div class="section-head">
+          <p class="section-index">04</p>
+          <div>
+            <h2 id="boundaries-title" class="section-title">Границы</h2>
+            <p class="section-lede">
+              Что Merilo намеренно не утверждает. Это часть контракта, а не мелкий шрифт.
+            </p>
+          </div>
+        </div>
+
+        <ul class="boundary-list">
+          <li>
+            <strong>Не заменяет собеседование</strong>
+            <span>Карточка измеряет конкретное решение. Она не оценивает человека целиком и не предсказывает эффективность в команде.</span>
+          </li>
+          <li>
+            <strong>Не ловит использование AI</strong>
+            <span>Использование AI — декларация кандидата, а не результат детекции. Карточка показывает «AI: да» или «AI: нет» без догадок.</span>
+          </li>
+          <li>
+            <strong>Не сравнивает людей рейтингом</strong>
+            <span>Нет общего лидерборда разработчиков. Есть отдельные карточки с языком, кейсом, баллом и защитой.</span>
+          </li>
+          <li>
+            <strong>Не калибрует все языки одинаково</strong>
+            <span>Семантическая рубрика калибрована сначала для Python и JavaScript. Для остальных языков работают синтаксический и защитный шлюзы.</span>
+          </li>
+          <li>
+            <strong>Не публикует исходный код</strong>
+            <span>Код не входит ни в публичную карточку, ни в манифест. В карточке остаются только хэши, оценки и защита.</span>
+          </li>
+          <li>
+            <strong>Не обещает «идеальный балл»</strong>
+            <span>Оценка зависит от рубрики и версии модели. Карточка фиксирует версию рубрики и источник оценки.</span>
+          </li>
+          <li>
+            <strong>Пока без клиентов и пилотов</strong>
+            <span>Ни одна компания не платила и не подписывала договор. Цены на этой странице — гипотеза оффера, а не проверенный прайс.</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- FAQ                                                               -->
+      <!-- ================================================================= -->
+      <section id="faq" class="section wrap" aria-labelledby="faq-title">
+        <div class="section-head">
+          <p class="section-index">05</p>
+          <div>
+            <h2 id="faq-title" class="section-title">Вопросы</h2>
+            <p class="section-lede">Короткие ответы на то, что спрашивают чаще всего.</p>
+          </div>
+        </div>
+
+        <div class="faq">
+          <details class="faq-item">
+            <summary>Что именно подписано?</summary>
+            <p>
+              Балл, тир, язык, кейс, защита и хэши кода и задачи. Карточка подписана
+              HMAC-SHA256 ключом платформы; переносимый манифест — Ed25519. Публичный
+              ключ и контракт манифеста лежат в <code>/.well-known/merilo.json</code>.
+            </p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Можно ли проверить карточку без Merilo?</summary>
+            <p>
+              Да. Манифест карточки — обычный JSON, а подпись Ed25519 проверяется
+              публичным ключом из документа <code>/.well-known/merilo.json</code>.
+              Для этого не нужны ни база, ни секрет платформы.
+            </p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Код кандидата публикуется?</summary>
+            <p>
+              Нет. В публичной карточке и манифесте только SHA-256-хэши кода и задачи.
+              Исходный текст остаётся в закрытом хранилище.
+            </p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Сколько языков поддерживается?</summary>
+            <p>
+              Тринадцать: Python, JavaScript, TypeScript, Java, Go, C#, C++, C, Rust,
+              Ruby, PHP, Kotlin, Swift. Семантическая рубрика откалибрована сначала для
+              Python и JavaScript.
+            </p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Что если проверка остановилась на шлюзе?</summary>
+            <p>
+              Синтаксическая ошибка или срабатывание защиты — отрицательный результат.
+              Балл не начисляется, тир Gold не выдаётся, карточка честно показывает
+              причину остановки.
+            </p>
+          </details>
+
+          <details class="faq-item">
+            <summary>Кто видит защиту?</summary>
+            <p>
+              Записанная защита публична: она входит в карточку и подписывается вместе
+              с ней. До записи ответы видны только кандидату в его вкладке.
+            </p>
+          </details>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- RECRUITER VIEW                                                       -->
+    <!-- =================================================================== -->
+    <div id="view-recruiter" class="wrap hidden">
+
+      <div class="section-bar">
+        <h2>HR-портал</h2>
+        <p class="panel-note">Реестр карточек · сравнение · публикация кейсов</p>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label" data-i18n="hr.metric1">Верифицировано решений</div>
+          <div class="metric-value" id="hr-metric-verified">—</div>
+          <div class="metric-note" data-i18n="hr.metric1.trend">по данным /api/cards/recent</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label" data-i18n="hr.metric2">Ready to Hire (Gold)</div>
+          <div class="metric-value" id="hr-metric-gold">—</div>
+          <div class="metric-note" data-i18n="hr.metric2.sub">Безупречный 3-Gate аудит</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label" data-i18n="hr.metric3">Время на скрининг</div>
+          <div class="metric-value">—</div>
+          <div class="metric-note" data-i18n="hr.metric3.sub">пилотов не было — не измерено</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label" data-i18n="hr.metric4">HR-действие</div>
+          <button id="recruiter-publish-task-btn" type="button" class="btn btn-primary btn-sm" style="margin-block: 0.35rem;">
+            <span data-i18n="hr.publish">+ Опубликовать микро-кейс</span>
+          </button>
+          <div class="metric-note" data-i18n="hr.metric4.sub">Пример кастомного кейса: специфика Kaspi.kz-подобного банка (не клиент)</div>
+        </div>
+      </div>
+
+      <!-- Publish task -->
+      <section id="recruiter-post" class="recruiter-post" aria-labelledby="post-title-heading">
+        <div class="panel-head">
+          <div>
+            <h2 id="post-title-heading" class="form-title" data-i18n="post.title">Опубликовать новую задачу</h2>
+            <p class="form-subtitle" data-i18n="post.subtitle">
+              Разместите микро-кейс вашей компании — кандидаты получат уникальную верифицируемую задачу.
+            </p>
+          </div>
+          <span class="tag">POST /api/tasks</span>
+        </div>
+
+        <form id="task-post-form" class="recruiter-form" novalidate>
+          <div class="span-2 field">
+            <label for="post-title" class="field-label" data-i18n="post.fieldTitle">Название задачи</label>
+            <input type="text" id="post-title" class="input" required
+                   data-i18n-placeholder="post.phTitle"
+                   placeholder="Например: FinTech — Проверка лимитов переводов">
+          </div>
+
+          <div class="field">
+            <label for="post-company" class="field-label" data-i18n="post.company">Компания</label>
+            <input type="text" id="post-company" class="input" required
+                   data-i18n-placeholder="post.phCompany"
+                   placeholder="Например: Kaspi Ecosystem">
+          </div>
+
+          <div class="field">
+            <label for="post-stack" class="field-label" data-i18n="post.stack">Стек технологий</label>
+            <input type="text" id="post-stack" class="input" required
+                   data-i18n-placeholder="post.phStack"
+                   placeholder="Python 3.11, SQLite, FastAPI">
+          </div>
+
+          <div class="field">
+            <label for="post-difficulty" class="field-label" data-i18n="post.difficulty">Уровень сложности</label>
+            <select id="post-difficulty" class="select">
+              <option value="Junior" data-i18n="post.diff.junior">Junior</option>
+              <option value="Junior+" data-i18n="post.diff.juniorPlus">Junior+</option>
+              <option value="Middle" data-i18n="post.diff.middle">Middle</option>
+            </select>
+          </div>
+
+          <div class="span-2 field">
+            <label for="post-description" class="field-label" data-i18n="post.description">Описание задачи</label>
+            <textarea id="post-description" class="textarea" rows="3"
+                      data-i18n-placeholder="post.phDescription"
+                      placeholder="Опишите бизнес-контекст и сбой, который кандидат должен исправить (минимум 20 символов)..."></textarea>
+          </div>
+
+          <div class="span-2">
+            <p class="field-label" data-i18n="post.rubricTitle">Рубрика оценки (3 критерия)</p>
+            <div class="recruiter-form">
+              <div class="field">
+                <label for="post-rubric-clean" class="field-label" data-i18n="post.rubric.clean">Чистота кода (30%)</label>
+                <textarea id="post-rubric-clean" class="textarea" rows="3"
+                          data-i18n-placeholder="post.phRubric" placeholder="Критерии оценивания..."></textarea>
+              </div>
+              <div class="field">
+                <label for="post-rubric-arch" class="field-label" data-i18n="post.rubric.arch">Архитектура и безопасность (40%)</label>
+                <textarea id="post-rubric-arch" class="textarea" rows="3"
+                          data-i18n-placeholder="post.phRubric" placeholder="Критерии оценивания..."></textarea>
+              </div>
+              <div class="field">
+                <label for="post-rubric-edge" class="field-label" data-i18n="post.rubric.edge">Граничные случаи (30%)</label>
+                <textarea id="post-rubric-edge" class="textarea" rows="3"
+                          data-i18n-placeholder="post.phRubric" placeholder="Критерии оценивания..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="span-2 field">
+            <label for="post-buggy-code" class="field-label" data-i18n="post.buggyCode">Код с ошибкой (buggy_code)</label>
+            <textarea id="post-buggy-code" class="textarea" rows="6" spellcheck="false"
+                      data-i18n-placeholder="post.phBuggy"
+                      placeholder="def process_transfer(...):  # минимум 10 символов кода с ошибкой"></textarea>
+          </div>
+
+          <div id="task-post-error" class="error-box hidden span-2"></div>
+
+          <div class="span-2 form-actions">
+            <button id="task-post-submit-btn" type="submit" class="btn btn-primary">
+              <span id="task-post-submit-label" data-i18n="post.submit">Опубликовать задачу</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Talent stream -->
+      <section class="stream" aria-labelledby="stream-title">
+        <div class="stream-head">
+          <div>
+            <h2 id="stream-title" class="form-title" data-i18n="hr.streamTitle">Поток подтверждённых разработчиков</h2>
+            <p class="stream-note" data-i18n="hr.streamSub">
+              Криптографически проверенные решения кандидатов со статусами Gold/Silver и неизменяемыми хешами
+            </p>
+          </div>
+          <span class="tag">Kaspi Ecosystem Verified</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col" class="cell-center" data-i18n="th.compare">Сравнить</th>
+                <th scope="col" data-i18n="th.candidate">Кандидат</th>
+                <th scope="col" data-i18n="th.case">Бизнес-кейс</th>
+                <th scope="col" data-i18n="th.stack">Стек</th>
+                <th scope="col" data-i18n="th.score">Балл / Рубрика</th>
+                <th scope="col" data-i18n="th.tier">Тир</th>
+                <th scope="col" data-i18n="th.hash">Хэш / HMAC</th>
+                <th scope="col" class="cell-actions" data-i18n="th.action">Действие</th>
+              </tr>
+            </thead>
+            <tbody id="recruiter-candidates-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Comparison -->
+      <section id="recruiter-compare" class="stream" aria-labelledby="compare-title">
+        <div class="compare-head">
+          <div>
+            <h2 id="compare-title" class="form-title" data-i18n="hr.compareTitle">Сравнение кандидатов</h2>
+            <p class="stream-note" data-i18n="hr.compareSub">
+              Отметьте до трёх карточек в потоке — критерии, защита и язык будут рядом.
+            </p>
+          </div>
+          <div class="compare-tools">
+            <span id="compare-selection-count" class="compare-count">0 / 3</span>
+            <button id="compare-clear-btn" type="button" class="btn btn-secondary btn-sm" disabled>
+              <span data-i18n="hr.compareClear">Очистить</span>
+            </button>
+            <button id="compare-export-btn" type="button" class="btn btn-primary btn-sm" disabled>
+              <span data-i18n="hr.compareExport">Экспорт CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <p id="compare-status" role="status" aria-live="polite" class="compare-status hidden"></p>
+        <div id="compare-empty" class="compare-empty">
+          Сравнение пустое: отметьте до трёх карточек галочкой «Сравнить» в таблице выше.
+        </div>
+
+        <div class="table-wrap">
+          <table id="compare-table" class="compare-table hidden">
+            <thead id="compare-head"></thead>
+            <tbody id="compare-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- FOOTER                                                                -->
+  <!-- ===================================================================== -->
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <div>
+        <strong>MERILO</strong> © 2026 · измерение кода, а не рейтинг людей
+      </div>
+      <div class="footer-links">
+        <a href="#how" data-i18n="footer.how">Как это работает</a>
+        <a href="#boundaries" data-i18n="footer.boundaries">Границы</a>
+        <a href="/help" data-i18n="nav.help">Помощь</a>
+        <a href="/card/demo2026kz01" data-i18n="footer.registry">Реестр карточек</a>
+        <span>HMAC-SHA256 · Ed25519</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Mobile-only primary action -->
+  <nav id="mobile-verify-cta" class="mobile-cta" aria-label="Быстрая проверка">
+    <button id="mobile-verify-trigger" type="button" class="btn btn-primary">
+      <span id="mobile-verify-cta-label">Проверить решение</span>
+    </button>
+  </nav>
+
+  <!-- Account modal -->
+  <div id="auth-modal" role="dialog" aria-modal="true" aria-label="Учетная запись" class="modal hidden">
+    <div class="modal-dialog">
+      <button id="auth-modal-close-btn" type="button" class="modal-close" aria-label="Закрыть окно аккаунта">✕</button>
+
+      <h2 class="modal-title" data-i18n="auth.title">Учетная запись кандидата</h2>
+      <p class="modal-subtitle" data-i18n="auth.subtitle">
+        Управляйте профилем или переключайтесь между кандидатом и IT-рекрутером.
+      </p>
+
+      <div id="modal-current-user-box" class="modal-user">
+        <div class="modal-user-id">
+          <span id="modal-user-avatar" class="avatar">ЖМ</span>
+          <div>
+            <div id="modal-user-name" class="modal-user-name">Жолынбек Марат</div>
+            <div id="modal-user-email" class="modal-user-email">marat@merilo.kz</div>
+          </div>
+        </div>
+        <div class="modal-user-actions">
+          <a href="/app" class="btn btn-secondary btn-sm" data-i18n="auth.workspace">Рабочее пространство</a>
+          <button id="logout-btn" type="button" class="btn btn-danger btn-sm" data-i18n="auth.logout">Выйти</button>
+        </div>
+      </div>
+
+      <div class="modal-tabs">
+        <button id="auth-tab-login" type="button" class="modal-tab is-active" data-i18n="auth.tabLogin">Вход</button>
+        <button id="auth-tab-register" type="button" class="modal-tab" data-i18n="auth.tabRegister">Регистрация</button>
+      </div>
+
+      <div id="auth-error-box" class="error-box hidden"></div>
+
+      <form id="login-form" class="modal-form">
+        <div class="field">
+          <label for="login-email" class="field-label">Email</label>
+          <input type="email" id="login-email" class="input" required placeholder="name@example.com">
+        </div>
+        <div class="field">
+          <label for="login-password" class="field-label" data-i18n="auth.password">Пароль</label>
+          <input type="password" id="login-password" class="input" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary" data-i18n="auth.loginBtn">Войти в профиль</button>
+
+        <div class="modal-demo">
+          <p class="field-label" data-i18n="auth.demoHint">Демо-доступ одним нажатием:</p>
+          <div class="demo-grid">
+            <button id="quick-login-candidate" type="button" class="btn btn-secondary btn-sm">
+              <span data-i18n="auth.demoCandidate">Кандидат — Марат</span>
+            </button>
+            <button id="quick-login-recruiter" type="button" class="btn btn-secondary btn-sm">
+              <span data-i18n="auth.demoRecruiter">HR — Kaspi</span>
+            </button>
+          </div>
+          <p class="demo-note" data-i18n="auth.demoPasswordHint">
+            Демо-аккаунты открываются без пароля: сервер выдаёт настоящую подписанную сессию,
+            карточки и аккаунты остаются в базе.
+          </p>
+        </div>
+      </form>
+
+      <form id="register-form" class="modal-form hidden">
+        <div class="field">
+          <label for="reg-name" class="field-label" data-i18n="auth.fullName">Полное имя</label>
+          <input type="text" id="reg-name" class="input" required placeholder="Имя и Фамилия"
+                 data-i18n-placeholder="auth.namePlaceholder">
+        </div>
+        <div class="field">
+          <label for="reg-email" class="field-label">Email</label>
+          <input type="email" id="reg-email" class="input" required placeholder="name@example.com">
+        </div>
+        <div class="field">
+          <label for="reg-password" class="field-label" data-i18n="auth.passwordHint">Пароль (от 6 символов)</label>
+          <input type="password" id="reg-password" class="input" minlength="6" required placeholder="••••••••">
+        </div>
+        <div class="field">
+          <label for="reg-role" class="field-label" data-i18n="auth.roleLabel">Роль на платформе</label>
+          <select id="reg-role" class="select">
+            <option value="candidate" data-i18n="auth.roleCandidate">Разработчик (Кандидат)</option>
+            <option value="recruiter" data-i18n="auth.roleRecruiter">IT-Рекрутер / Hiring Lead</option>
+          </select>
+          <p class="field-hint" data-i18n="auth.roleHint">Вторую роль можно добавить позже в профиле — аккаунт останется один.</p>
+        </div>
+        <button type="submit" class="btn btn-primary" data-i18n="auth.registerBtn">Создать аккаунт</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true">
+    <span id="toast-icon" aria-hidden="true">✓</span>
+    <span id="toast-msg">Сообщение</span>
+  </div>
+
+  <script src="/static/i18n.js?v=20261113a"></script>
+  <script src="/static/app.js?v=20261113a"></script>
+</body>
+</html>

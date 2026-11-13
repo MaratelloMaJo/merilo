@@ -1,0 +1,24 @@
+{
+  "manifest": {
+    "version": "merilo-card-v1",
+    "card_hash": "2f8f541bd161",
+    "candidate_name": "Manifest Fixture",
+    "task_id": "task-fintech-01",
+    "task_title": "FinTech — Kaspi-style Transfer API",
+    "language": "python",
+    "status": "verified",
+    "total_score": 52,
+    "badge_tier": "Needs Work",
+    "code_sha256": "d0c8968bb46c9c24c39070161f0cf781a411263ea3cd9be9e10dc9ac0950150c",
+    "task_sha256": "72c8954e202e7abb46edaef81c66d95f8cd60683b888f01e164054544eb4a73d",
+    "defense_hash": null,
+    "ai_assisted": false,
+    "created_at": "2026-11-12T16:58:25.716393+00:00",
+    "rubric_version": "2026-11-v1",
+    "model": "gemini-3.6-flash",
+    "content_hash": "f90ff402618bb208c28a46b4ccd629f8d8d026fa2dd7c9e7a1fe657afbb31ce8"
+  },
+  "ed25519_signature": "U3Z6KoPRX8imSCHbTYKNnhXnQ8UEclycJJ2_4hd2emdxeRHyALFXUu8mHTRpWpgeM64nB15PSSyOdyQMiEWFBg",
+  "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+  "valid": true
+}

@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Публичная карточка верификации — Merilo</title>
+  <meta name="description" content="Публичная карточка верификации инженерных навыков Merilo: итоговый балл, критерии оценки и статус криптографической подписи.">
+  <meta name="theme-color" content="#F3EFE6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14130F" media="(prefers-color-scheme: dark)">
+
+  <!-- Open Graph / social sharing (values are personalised after the card loads) -->
+  <meta property="og:type" content="profile">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:site_name" content="Merilo">
+  <meta property="og:title" content="Публичная карточка верификации — Merilo">
+  <meta property="og:description" content="Итоговый балл, критерии оценки и статус криптографической подписи кандидата.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Публичная карточка верификации — Merilo">
+  <meta name="twitter:description" content="Итоговый балл, критерии оценки и статус криптографической подписи кандидата.">
+
+  <link rel="stylesheet" href="/static/merilo.css">
+  <script>
+    (function () {
+      try {
+        var forced = new URLSearchParams(location.search).get("theme");
+        var saved = localStorage.getItem("merilo.theme");
+        var theme = forced === "dark" || forced === "light"
+          ? forced
+          : (saved === "dark" || saved === "light"
+            ? saved
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    /* Print stylesheet for HR / PDF export: A4, one page, QR visible. The
+       certificate is a document first: the screen chrome disappears, the
+       ruled rows stay, and the signature/defense blocks must fit one page. */
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+
+    @media print {
+      html {
+        font-size: 12px !important;
+      }
+      body {
+        background: #FFFFFF !important;
+        color: #191816 !important;
+        font-size: 10pt !important;
+      }
+      header,
+      footer,
+      #toast,
+      .no-print {
+        display: none !important;
+      }
+      main {
+        max-width: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      #card-loading,
+      #card-error,
+      #card-notfound,
+      #card-blocked {
+        display: none !important;
+      }
+      .card-print-container {
+        border: 1px solid #CFC7B8 !important;
+        border-top: 3px solid #191816 !important;
+        background: #FFFFFF !important;
+        color: #191816 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      /* One-page budget: 277 mm ≈ 1047 px at 96 dpi; measured target ≤ 954 px
+         so Chrome's 10 mm margins and the print header still leave slack. */
+      .card-print-container .cert-section {
+        margin: 0 0 1px !important;
+        padding: 1px 8px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .card-print-container .cert-section-head {
+        margin-bottom: 1px !important;
+      }
+      .card-print-container .cert-section-title,
+      .card-print-container .cert-section-note {
+        font-size: 8px !important;
+        line-height: 1.2 !important;
+      }
+      .card-print-container .cert-head {
+        padding-bottom: 3px !important;
+        gap: 3px !important;
+      }
+      .card-print-container .criteria-table th,
+      .card-print-container .criteria-table td {
+        padding-top: 1px !important;
+        padding-bottom: 1px !important;
+        font-size: 8.5px !important;
+        line-height: 1.15 !important;
+      }
+      .card-print-container .criteria-table tbody th > .criteria-bar {
+        display: none !important;
+      }
+      .card-print-container #card-defense-answers {
+        gap: 1px !important;
+        font-size: 9.5px !important;
+        line-height: 1.15 !important;
+      }
+      .card-print-container #card-defense-answers .defense-entry {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .card-print-container #card-defense-answers .defense-entry-q,
+      .card-print-container #card-defense-answers .defense-entry-a {
+        font-size: 9.5px !important;
+        line-height: 1.15 !important;
+        margin-bottom: 0 !important;
+      }
+      .card-print-container #card-defense-answers .defense-entry-label,
+      .card-print-container #card-defense-answers .defense-hash {
+        font-size: 7.5px !important;
+        line-height: 1.1 !important;
+      }
+      .card-print-container #card-executive-summary,
+      .card-print-container #card-registry-note {
+        font-size: 8.5px !important;
+        line-height: 1.2 !important;
+      }
+      .card-print-container .cert-meta {
+        gap: 4px 8px !important;
+      }
+      .card-print-container .cert-meta dt {
+        font-size: 7.5px !important;
+      }
+      .card-print-container .cert-meta dd {
+        font-size: 8.5px !important;
+        line-height: 1.15 !important;
+      }
+      .card-print-container .signal-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 2px 8px !important;
+      }
+      .card-print-container .signal-grid dt {
+        font-size: 7.5px !important;
+      }
+      .card-print-container .signal-grid dd {
+        font-size: 8.5px !important;
+        padding: 1px 5px !important;
+        margin-bottom: 1px !important;
+      }
+      .card-print-container .portable-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+      }
+      .card-print-container .portable-links {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 0 14px !important;
+      }
+      .card-print-container .portable-links a {
+        min-height: 0 !important;
+        font-size: 8px !important;
+        line-height: 1.2 !important;
+      }
+      .card-print-container .portable-links br {
+        display: none !important;
+      }
+      .card-print-container .portable-note {
+        width: 100% !important;
+        margin: 0 !important;
+        padding-top: 0 !important;
+        font-size: 7.5px !important;
+        line-height: 1.15 !important;
+      }
+      #card-code-policy,
+      #card-content details {
+        display: none !important;
+      }
+      .card-print-container h1 {
+        font-size: 16pt !important;
+      }
+      .card-print-container .cert-name {
+        font-size: 16pt !important;
+      }
+      .card-print-container .cert-score-value {
+        font-size: 22pt !important;
+      }
+      .card-print-container .cert-seal,
+      .card-print-container .cert-chip {
+        background: transparent !important;
+        border: 1px solid #CFC7B8 !important;
+      }
+      /* On paper the chips keep their borders but drop the screen fill,
+         otherwise dark text sits on a dark background (~1.1:1 contrast). */
+      #card-language,
+      #card-ai-disclosure,
+      #card-issued-at,
+      #card-eval-mode,
+      #card-language-chip {
+        background: transparent !important;
+        color: #191816 !important;
+        border: 1px solid #CFC7B8 !important;
+      }
+      #card-qr {
+        display: block !important;
+        flex: 0 0 64px !important;
+        width: 64px !important;
+        height: 64px !important;
+        background: #FFFFFF !important;
+      }
+      pre {
+        background: #FAF7F0 !important;
+        color: #191816 !important;
+        border: 1px solid #CFC7B8 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <a class="skip-link" href="#card-main">Перейти к содержимому</a>
+
+  <header class="masthead no-print">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="/">
+        <span class="brand-name">MERILO</span>
+        <span class="brand-sub">Публичный реестр карточек</span>
+      </a>
+
+      <div class="masthead-tools">
+        <button id="theme-toggle" type="button" class="icon-btn theme-toggle"
+                aria-label="Переключить тему" aria-pressed="false" title="Тема">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+          </svg>
+        </button>
+        <div class="lang-switch" role="group" aria-label="Язык интерфейса">
+          <button type="button" class="lang-btn" data-lang="ru" aria-label="RU — Русский язык">RU</button>
+          <button type="button" class="lang-btn" data-lang="kz" aria-label="КЗ — Қазақ тілі">КЗ</button>
+          <button type="button" class="lang-btn" data-lang="en" aria-label="EN — English">EN</button>
+        </div>
+        <a href="/" class="btn btn-secondary btn-sm">
+          <span aria-hidden="true">←</span>
+          <span data-i18n="card.back">Вернуться к задачам</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="card-main" class="wrap cert-page" aria-busy="true">
+
+    <!-- STATE: loading -->
+    <div id="card-loading" class="cert-state" role="status" aria-live="polite" aria-busy="true">
+      <p class="mono-label">Загружаем карточку…</p>
+      <div aria-hidden="true">
+        <div class="skeleton" style="width: 30%"></div>
+        <div class="skeleton skeleton--tall" style="width: 65%"></div>
+        <div class="skeleton" style="width: 50%"></div>
+        <div class="skeleton-grid">
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+        </div>
+        <div class="skeleton skeleton--tall"></div>
+      </div>
+    </div>
+
+    <!-- STATE: network / server error -->
+    <div id="card-error" class="cert-state hidden" role="alert" aria-live="assertive" aria-atomic="true">
+      <p class="state-mark" aria-hidden="true">!</p>
+      <h2>Не удалось загрузить карточку</h2>
+      <p>
+        Проверьте соединение и повторите попытку. Если ошибка повторяется, сервис
+        верификации временно недоступен.
+      </p>
+      <div class="cert-actions-group" style="margin-top: 0.8rem;">
+        <button id="card-retry" type="button" class="btn btn-primary">
+          <span aria-hidden="true">↻</span>
+          <span>Повторить</span>
+        </button>
+        <a href="/" class="btn btn-secondary">На главную</a>
+      </div>
+    </div>
+
+    <!-- STATE: not found / empty -->
+    <div id="card-notfound" class="cert-state hidden" role="status" aria-live="polite">
+      <p class="state-mark" aria-hidden="true">∅</p>
+      <h2 data-i18n="card.errorTitle">Сертификат не найден</h2>
+      <p>
+        Карточка не найдена. Возможно, ссылка устарела или хэш указан с ошибкой.
+      </p>
+      <p class="cert-serial">/card/<span id="card-notfound-hash">—</span></p>
+      <p><a href="/" class="btn btn-primary">На главную <span aria-hidden="true">→</span></a></p>
+    </div>
+
+    <!-- STATE: blocked (prompt injection / policy bypass) -->
+    <div id="card-blocked" class="cert-state hidden" role="alert" aria-live="assertive" aria-atomic="true">
+      <p class="state-mark" aria-hidden="true">⛔</p>
+      <h2>Верификация заблокирована (Gate 2)</h2>
+      <p>
+        Проверка безопасности обнаружила попытку инъекции инструкций или обхода
+        правил оценки. Балл не присваивается, тир не выдаётся.
+      </p>
+
+      <dl class="cert-meta" style="margin-top: 0.8rem;">
+        <div>
+          <dt>Кандидат</dt>
+          <dd id="card-blocked-name">—</dd>
+        </div>
+        <div>
+          <dt>Кейс</dt>
+          <dd id="card-blocked-task">—</dd>
+        </div>
+        <div>
+          <dt>Хэш записи</dt>
+          <dd id="card-blocked-hash">—</dd>
+        </div>
+      </dl>
+
+      <p style="margin-top: 0.8rem;">
+        Итоговый балл и тир Gold/Silver намеренно не отображаются: решение
+        отрицательное. Кандидат может исправить решение и отправить код повторно.
+      </p>
+
+      <div class="cert-actions-group no-print">
+        <button type="button" data-action="copy-link" class="btn btn-secondary">
+          <span aria-hidden="true">⧉</span>
+          <span data-copy-label>Скопировать ссылку</span>
+        </button>
+        <a href="/" class="btn btn-secondary"><span aria-hidden="true">←</span> На главную</a>
+      </div>
+    </div>
+
+    <!-- STATE: success -->
+    <article id="card-content" class="cert card-print-container hidden" aria-labelledby="card-candidate-name">
+
+      <div class="cert-head">
+        <div class="cert-identity">
+          <div id="card-seal" class="cert-seal">
+            <span id="seal-icon" aria-hidden="true">✓</span>
+            <span id="seal-text" data-i18n="card.seal">VERIFIED CRYPTOGRAPHIC SEAL</span>
+          </div>
+
+          <h1 id="card-candidate-name" class="cert-name">—</h1>
+
+          <p class="cert-case">
+            <span data-i18n="card.caseLabel">Квалификационный кейс:</span>
+            <strong id="card-task-title">—</strong>
+          </p>
+
+          <p class="cert-facts">
+            <span><span data-i18n="card.companyLabel">Компания:</span> <strong id="card-company-name">—</strong></span>
+            <span>Выдана <time id="card-created-at" datetime="">—</time></span>
+          </p>
+
+          <div class="cert-chips">
+            <span id="card-language-chip" class="cert-chip">
+              <span data-i18n="card.languageLabel">Язык:</span>
+              <strong id="card-language">—</strong>
+            </span>
+            <span id="card-ai-disclosure" class="cert-chip">AI: нет</span>
+          </div>
+        </div>
+
+        <div class="cert-score">
+          <div id="card-badge-container" class="cert-stamp">
+            <span id="card-badge-tier">—</span>
+          </div>
+          <div id="card-score-wrap" class="cert-score-row">
+            <span id="card-total-score" class="cert-score-value">—</span>
+            <span class="cert-score-total" aria-hidden="true">/100</span>
+          </div>
+          <p class="cert-serial">Сертификат <strong id="card-serial">ML-2026-0000</strong></p>
+        </div>
+      </div>
+
+      <!-- Verification metadata: score, rubric version, model, duration -->
+      <section id="card-metadata-section" class="cert-section" aria-labelledby="card-metadata-heading">
+        <div class="cert-section-head">
+          <h2 id="card-metadata-heading" class="cert-section-title" data-i18n="card.metadataTitle">
+            Метаданные проверки
+          </h2>
+          <span class="cert-section-note">3-Gate Assessment · 30 / 40 / 30</span>
+        </div>
+        <dl id="card-metadata" class="cert-meta">
+          <div>
+            <dt data-i18n="card.scoreLabel">Итоговый балл</dt>
+            <dd id="card-meta-score">—</dd>
+          </div>
+          <div>
+            <dt data-i18n="card.rubricLabel">Версия рубрики</dt>
+            <dd id="card-meta-rubric">—</dd>
+          </div>
+          <div>
+            <dt data-i18n="card.modelLabel">Модель оценки</dt>
+            <dd id="card-meta-model">—</dd>
+          </div>
+          <div>
+            <dt data-i18n="card.durationLabel">Время проверки</dt>
+            <dd id="card-meta-duration">—</dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- Criteria Breakdown -->
+      <section class="cert-section" aria-labelledby="criteria-heading">
+        <div class="cert-section-head">
+          <h2 id="criteria-heading" class="cert-section-title" data-i18n="card.competencies">
+            Подтвержденные инженерные компетенции
+          </h2>
+          <span class="cert-section-note">измерено по рубрике</span>
+        </div>
+
+        <table class="criteria-table">
+          <caption class="sr-only">Оценки по трём критериям, их веса и вклад в итоговый балл</caption>
+          <thead>
+            <tr>
+              <th scope="col">Критерий</th>
+              <th scope="col">Вес</th>
+              <th scope="col" style="text-align: right;">Оценка</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">
+                <span data-i18n="card.cleanTitle" class="criteria-name">Чистота кода (PEP8)</span>
+                <span data-i18n="card.cleanHint" class="criteria-hint">Параметризация, тайп-хинты, стиль</span>
+                <span class="criteria-bar"><span id="card-clean-code-bar"></span></span>
+              </th>
+              <td class="criteria-weight">30%</td>
+              <td class="criteria-score"><span id="card-clean-code-val">0</span><small>/100</small></td>
+            </tr>
+            <tr>
+              <th scope="row">
+                <span data-i18n="card.archTitle" class="criteria-name">Архитектура &amp; Безопасность</span>
+                <span data-i18n="card.archHint" class="criteria-hint">Сложность, транзакции, устойчивость</span>
+                <span class="criteria-bar"><span id="card-architecture-bar"></span></span>
+              </th>
+              <td class="criteria-weight">40%</td>
+              <td class="criteria-score"><span id="card-architecture-val">0</span><small>/100</small></td>
+            </tr>
+            <tr>
+              <th scope="row">
+                <span data-i18n="card.edgeTitle" class="criteria-name">Граничные условия</span>
+                <span data-i18n="card.edgeHint" class="criteria-hint">Валидация, обработка исключений</span>
+                <span class="criteria-bar"><span id="card-edge-cases-bar"></span></span>
+              </th>
+              <td class="criteria-weight">30%</td>
+              <td class="criteria-score"><span id="card-edge-cases-val">0</span><small>/100</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Executive Summary -->
+      <section class="cert-section" aria-labelledby="summary-heading">
+        <div class="cert-section-head">
+          <h2 id="summary-heading" class="cert-section-title" data-i18n="result.summaryTitle">
+            Резюме для нанимающего руководителя
+          </h2>
+        </div>
+        <p id="card-executive-summary" style="margin: 0;">—</p>
+      </section>
+
+      <!-- Source code policy (candidate code is never published) -->
+      <section id="card-code-policy" class="cert-section" aria-labelledby="code-policy-heading">
+        <div class="cert-section-head">
+          <h2 id="code-policy-heading" class="cert-section-title" data-i18n="card.codeTitle">Исходный код</h2>
+        </div>
+        <p data-i18n="card.codeNotPublished" style="margin: 0;">Исходный код не публикуется</p>
+      </section>
+
+      <!-- Signature & Registry Block -->
+      <section class="cert-section" aria-labelledby="verify-heading">
+        <div class="cert-section-head">
+          <h2 id="verify-heading" class="cert-section-title" data-i18n="card.verifyTitle">
+            Криптографическая верификация подлинности
+          </h2>
+          <span id="card-signature-badge" class="sig-pill is-signed">—</span>
+        </div>
+
+        <dl class="signal-grid">
+          <div>
+            <dt data-i18n="result.hashLabel">Хэш сертификата</dt>
+            <dd><code id="card-hash-display">—</code></dd>
+          </div>
+          <div>
+            <dt>Статус подписи</dt>
+            <dd id="card-signature-status">—</dd>
+          </div>
+          <div>
+            <dt>Дата выдачи</dt>
+            <dd id="card-issued-at">—</dd>
+          </div>
+          <div>
+            <dt>Источник оценки</dt>
+            <dd id="card-eval-mode">—</dd>
+          </div>
+          <div>
+            <dt>Отпечаток ключа Ed25519</dt>
+            <dd id="card-key-fingerprint">вычисляется…</dd>
+          </div>
+        </dl>
+
+        <details>
+          <summary>Показать значение HMAC-подписи</summary>
+          <p class="portable-note"><code id="card-signature-display">—</code></p>
+        </details>
+
+        <p id="card-registry-note" class="portable-note" data-i18n="card.registryNote">
+          Сертификат подписан HMAC-SHA256 ключом платформы и зафиксирован в реестре
+          Merilo. Подмена обнаруживается проверкой подписи.
+        </p>
+      </section>
+
+      <!-- Public defense record: readable by anyone, read-only -->
+      <section id="card-defense-block" class="cert-section" aria-labelledby="card-defense-heading">
+        <div class="cert-section-head">
+          <h2 id="card-defense-heading" class="cert-section-title" data-i18n="card.defenseTitle">
+            Защита решения
+          </h2>
+          <span id="card-defense-badge" class="sig-pill">—</span>
+        </div>
+        <div id="card-defense-answers" class="defense-record">
+          <p data-i18n="card.defenseMissing">Защита не записана</p>
+        </div>
+      </section>
+
+      <!-- Candidate defense: one-time, token-bound answers -->
+      <section id="defense-panel" class="cert-section no-print hidden" aria-labelledby="defense-heading">
+        <div class="cert-section-head">
+          <h2 id="defense-heading" class="cert-section-title">Защита решения кандидатом</h2>
+          <span id="defense-badge" class="defense-badge is-pending">Ожидает защиты</span>
+        </div>
+
+        <p>
+          Ответьте на три вопроса о собственном решении. Защита записывается один раз
+          и подписывается вместе с карточкой.
+        </p>
+
+        <div id="defense-answers">
+          <div class="field">
+            <label for="defense-answer-1" id="defense-q1" class="field-label">—</label>
+            <textarea id="defense-answer-1" class="textarea" data-defense-answer="1" rows="3" minlength="20" maxlength="1200" aria-describedby="defense-hint-1"></textarea>
+            <span id="defense-hint-1" class="field-hint">20–1200 символов</span>
+          </div>
+          <div class="field">
+            <label for="defense-answer-2" id="defense-q2" class="field-label">—</label>
+            <textarea id="defense-answer-2" class="textarea" data-defense-answer="2" rows="3" minlength="20" maxlength="1200" aria-describedby="defense-hint-2"></textarea>
+            <span id="defense-hint-2" class="field-hint">20–1200 символов</span>
+          </div>
+          <div class="field">
+            <label for="defense-answer-3" id="defense-q3" class="field-label">—</label>
+            <textarea id="defense-answer-3" class="textarea" data-defense-answer="3" rows="3" minlength="20" maxlength="1200" aria-describedby="defense-hint-3"></textarea>
+            <span id="defense-hint-3" class="field-hint">20–1200 символов</span>
+          </div>
+        </div>
+
+        <!-- Recorded defense (read-only) -->
+        <div id="defense-recorded" class="defense-record hidden" aria-live="polite">
+          <div class="defense-entry">
+            <p class="defense-entry-label">Вопрос 1</p>
+            <p id="defense-recorded-q1" class="defense-entry-q">—</p>
+            <p id="defense-a1" class="defense-entry-a">—</p>
+          </div>
+          <div class="defense-entry">
+            <p class="defense-entry-label">Вопрос 2</p>
+            <p id="defense-recorded-q2" class="defense-entry-q">—</p>
+            <p id="defense-a2" class="defense-entry-a">—</p>
+          </div>
+          <div class="defense-entry">
+            <p class="defense-entry-label">Вопрос 3</p>
+            <p id="defense-recorded-q3" class="defense-entry-q">—</p>
+            <p id="defense-a3" class="defense-entry-a">—</p>
+          </div>
+          <p id="defense-recorded-hash" class="defense-hash">—</p>
+        </div>
+
+        <div id="defense-actions" class="cert-actions-group">
+          <button id="defense-seal" type="button" class="btn btn-primary">
+            <span aria-hidden="true">▣</span>
+            <span>Зафиксировать защиту</span>
+          </button>
+          <p id="defense-status" role="status" aria-live="polite" class="defense-status"></p>
+        </div>
+      </section>
+
+      <!-- Portable verification: manifest, badge, QR, profile -->
+      <section id="card-portable" class="cert-section" aria-labelledby="card-portable-heading">
+        <div class="cert-section-head">
+          <h2 id="card-portable-heading" class="cert-section-title" data-i18n="card.portableTitle">
+            Портативная проверка
+          </h2>
+          <span class="cert-section-note">Ed25519 · manifest</span>
+        </div>
+
+        <div class="portable-grid">
+          <img id="card-qr"
+               alt="QR-код на публичную карточку Merilo"
+               width="96" height="96"
+               class="qr"
+               hidden>
+
+          <div class="portable-links">
+            <a id="card-manifest-link" href="#">
+              <span aria-hidden="true">↧</span>
+              <span data-i18n="card.manifestLink">Манифест карточки (JSON)</span>
+            </a>
+            <br>
+            <a id="card-badge-link" href="#">
+              <span aria-hidden="true">◆</span>
+              <span data-i18n="card.badgeLink">SVG-бейдж карточки</span>
+            </a>
+            <br>
+            <a id="card-profile-link" href="#" class="hidden">
+              <span aria-hidden="true">◇</span>
+              <span data-i18n="card.profileLink">Публичный профиль кандидата</span>
+            </a>
+            <p class="portable-note">
+              Подпись проверяется офлайн по манифесту и документу
+              <code>/.well-known/merilo.json</code>.
+            </p>
+          </div>
+        </div>
+
+        <div class="no-print cert-actions-group" style="margin-top: 0.6rem;">
+          <button id="card-copy-badge-md" type="button" class="btn btn-secondary btn-sm">
+            <span aria-hidden="true">⧉</span>
+            <span data-copy-label data-i18n="card.copyBadgeMarkdown">Копировать Markdown бейджа</span>
+          </button>
+          <span id="card-copy-badge-status" role="status" aria-live="polite" class="status-line"></span>
+        </div>
+      </section>
+
+      <!-- Action Toolbar -->
+      <div class="cert-actions no-print">
+        <div class="cert-actions-group">
+          <button id="share-link-btn" type="button" class="btn btn-primary">
+            <span aria-hidden="true">⧉</span>
+            <span data-copy-label data-i18n="card.copyLink">Скопировать ссылку на сертификат</span>
+          </button>
+          <button id="card-print-btn" type="button" class="btn btn-secondary">
+            <span aria-hidden="true">⎙</span>
+            <span data-i18n="card.print">Печать / Сохранить в PDF</span>
+          </button>
+        </div>
+
+        <a href="/" class="btn-link">
+          <span aria-hidden="true">←</span>
+          <span>На главную</span>
+        </a>
+      </div>
+
+    </article>
+
+  </main>
+
+  <footer class="footer no-print">
+    <div class="wrap footer-grid">
+      <div><strong>MERILO</strong> © 2026 · публичный реестр проверенных инженерных навыков</div>
+      <div class="footer-links">
+        <a href="/">Стенд проверки</a>
+        <span>HMAC-SHA256 · Ed25519</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast (single polite live region for copy feedback) -->
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true">
+    <span id="toast-icon" aria-hidden="true">✓</span>
+    <span id="toast-msg">Скопировано</span>
+  </div>
+
+  <script src="/static/i18n.js"></script>
+  <script>
+    (function () {
+      var btn = document.getElementById("theme-toggle");
+      if (!btn) return;
+      var sync = function () {
+        btn.setAttribute("aria-pressed", document.documentElement.getAttribute("data-theme") === "dark" ? "true" : "false");
+      };
+      sync();
+      btn.addEventListener("click", function () {
+        var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        try { localStorage.setItem("merilo.theme", next); } catch (e) {}
+        sync();
+      });
+    })();
+  </script>
+  <script>
+    // Public Verified Skill Card — state machine + rendering
+    document.addEventListener('DOMContentLoaded', () => {
+      const I18N = window.MeriloI18n || {
+        getLocale: () => 'ru',
+        translate: (key, params) => (params && params.fallback !== undefined ? params.fallback : key),
+      };
+      const t = (key, params) => I18N.translate(key, params);
+
+      const mainEl = document.getElementById('card-main');
+      const toastEl = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      const stateEls = {
+        loading: document.getElementById('card-loading'),
+        success: document.getElementById('card-content'),
+        error: document.getElementById('card-error'),
+        notfound: document.getElementById('card-notfound'),
+        blocked: document.getElementById('card-blocked'),
+      };
+
+      let lastCard = null;
+      let copyTimer = null;
+      let toastTimer = null;
+
+      const LANGUAGE_LABELS = {
+        python: 'Python',
+        javascript: 'JavaScript',
+        typescript: 'TypeScript',
+        java: 'Java',
+        go: 'Go',
+        csharp: 'C#',
+        cpp: 'C++',
+        c: 'C',
+        rust: 'Rust',
+        ruby: 'Ruby',
+        php: 'PHP',
+        kotlin: 'Kotlin',
+        swift: 'Swift',
+      };
+
+      // ---------------------------------------------------------------- helpers
+
+      function setState(name) {
+        Object.keys(stateEls).forEach((key) => {
+          const el = stateEls[key];
+          if (!el) return;
+          el.classList.toggle('hidden', key !== name);
+        });
+        const busy = name === 'loading';
+        mainEl.setAttribute('aria-busy', busy ? 'true' : 'false');
+        if (stateEls.loading) stateEls.loading.setAttribute('aria-busy', busy ? 'true' : 'false');
+      }
+
+      function showToast(message, icon) {
+        if (!toastEl) return;
+        toastMsg.textContent = message;
+        toastIcon.textContent = icon || '✓';
+        toastEl.classList.add('is-visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastEl.classList.remove('is-visible');
+        }, 2400);
+      }
+
+      function setMeta(attr, key, value) {
+        let node = document.head.querySelector('meta[' + attr + '="' + key + '"]');
+        if (!node) {
+          node = document.createElement('meta');
+          node.setAttribute(attr, key);
+          document.head.appendChild(node);
+        }
+        node.setAttribute('content', value);
+      }
+
+      function translateTier(raw) {
+        const tier = raw || '';
+        if (tier.includes('Gold')) return t('badge.gold', { fallback: tier });
+        if (tier.includes('Silver')) return t('badge.silver', { fallback: tier });
+        if (tier.includes('Rejected') || tier.includes('Blocked')) return t('badge.rejected', { fallback: tier });
+        return t('badge.needsWork', { fallback: tier || 'Needs Work' });
+      }
+
+      function localeTag() {
+        return { ru: 'ru-RU', kz: 'kk-KZ', en: 'en-GB' }[I18N.getLocale()] || 'ru-RU';
+      }
+
+      function formatDate(iso) {
+        if (!iso) return '—';
+        const date = new Date(iso);
+        if (isNaN(date.getTime())) return String(iso);
+        const formatted = date.toLocaleString(localeTag(), {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'UTC',
+        });
+        return formatted + ' UTC';
+      }
+
+      // Certificate serial is derived from the signed card hash, so the same
+      // card always prints the same ML-2026-XXXX number.
+      function serialFromHash(hash) {
+        const clean = String(hash || '').replace(/[^0-9a-zA-Z]/g, '');
+        let digits = '';
+        for (let i = 0; i < clean.length && digits.length < 4; i += 1) {
+          digits += String(clean.charCodeAt(i) % 10);
+        }
+        return 'ML-2026-' + digits.padEnd(4, '0');
+      }
+
+      let fingerprintStarted = false;
+
+      // The fingerprint is the SHA-256 of the published Ed25519 public key.
+      // It is fetched from the same origin only; no external key server.
+      async function loadKeyFingerprint() {
+        const el = document.getElementById('card-key-fingerprint');
+        if (!el || fingerprintStarted) return;
+        fingerprintStarted = true;
+        try {
+          if (!window.crypto || !window.crypto.subtle) throw new Error('WebCrypto unavailable');
+          const response = await fetch('/.well-known/merilo.json', {
+            headers: { Accept: 'application/json' },
+          });
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          const payload = await response.json();
+          const publicKey = String(payload && payload.public_key ? payload.public_key : '').trim();
+          if (!publicKey) throw new Error('public_key missing');
+          const digest = await window.crypto.subtle.digest(
+            'SHA-256',
+            new TextEncoder().encode(publicKey)
+          );
+          const hex = Array.from(new Uint8Array(digest))
+            .map((byte) => byte.toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase();
+          el.textContent = hex.match(/.{1,4}/g).slice(0, 8).join(' ');
+        } catch (err) {
+          el.textContent = 'недоступен (локальный ключ не прочитан)';
+        }
+      }
+
+      // Clipboard with execCommand fallback (never blocks the UI with a modal)
+      async function copyText(text) {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+          }
+        } catch (err) {
+          // fall through to the legacy path
+        }
+        try {
+          const area = document.createElement('textarea');
+          area.value = text;
+          area.setAttribute('readonly', '');
+          area.style.position = 'fixed';
+          area.style.top = '-1000px';
+          area.style.opacity = '0';
+          document.body.appendChild(area);
+          area.select();
+          area.setSelectionRange(0, area.value.length);
+          const ok = document.execCommand('copy');
+          document.body.removeChild(area);
+          return ok;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      // Visual + announced feedback on the button itself, restored after 2s
+      function flashCopyLabel(button, ok) {
+        if (!button) return;
+        const label = button.querySelector('[data-copy-label]');
+        if (!label) return;
+        if (!button.dataset.defaultLabel) {
+          button.dataset.defaultLabel = label.textContent;
+        }
+        label.textContent = ok ? 'Скопировано' : 'Не удалось скопировать';
+        clearTimeout(copyTimer);
+        copyTimer = setTimeout(() => {
+          // Restore through i18n so the label follows the active locale
+          const key = label.dataset.i18n;
+          label.textContent = key ? t(key) : button.dataset.defaultLabel;
+        }, 2000);
+      }
+
+      async function handleCopyLink(event) {
+        const button = event.currentTarget;
+        const ok = await copyText(window.location.href);
+        flashCopyLabel(button, ok);
+        showToast(ok ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку', ok ? '✓' : '✕');
+      }
+
+      // GitHub-flavoured Markdown that embeds the SVG badge and links to the card.
+      function badgeMarkdown(hash) {
+        const origin = window.location.origin;
+        const safeHash = encodeURIComponent(hash);
+        return (
+          '[![Merilo Verified](' + origin + '/badge/' + safeHash + '.svg)]' +
+          '(' + origin + '/card/' + safeHash + ')'
+        );
+      }
+
+      let badgeStatusTimer = null;
+
+      async function handleCopyBadgeMarkdown(event) {
+        const button = event.currentTarget;
+        const ok = await copyText(badgeMarkdown(cardHash));
+        flashCopyLabel(button, ok);
+        const statusEl = document.getElementById('card-copy-badge-status');
+        if (statusEl) {
+          statusEl.textContent = ok ? 'Скопировано' : 'Не удалось скопировать';
+          clearTimeout(badgeStatusTimer);
+          badgeStatusTimer = setTimeout(() => {
+            statusEl.textContent = '';
+          }, 2000);
+        }
+        showToast(ok ? 'Markdown бейджа скопирован' : 'Не удалось скопировать Markdown', ok ? '✓' : '✕');
+      }
+
+      // ------------------------------------------------------------ page meta
+
+      function applyMeta(card) {
+        const name = card.candidate_name || 'Кандидат';
+        const tier = card.badge_tier || 'Needs Work';
+        const score = card.total_score === null || card.total_score === undefined ? 0 : card.total_score;
+        const blocked = String(card.status || '').toLowerCase() === 'blocked';
+
+        const title = blocked
+          ? name + ' — Верификация заблокирована — Merilo'
+          : name + ' — ' + tier + ' — Merilo';
+        const description = blocked
+          ? 'Карточка Merilo для ' + name + ': верификация заблокирована на шлюзе безопасности (Gate 2).'
+          : name + ': ' + tier + ', ' + score + '/100. Публичная карточка верификации инженерных навыков Merilo.';
+
+        setDocMeta(title, description);
+      }
+
+      // Shared title/OG writer for both data states and empty states
+      function setDocMeta(title, description) {
+        document.title = title;
+        setMeta('name', 'description', description);
+        setMeta('property', 'og:title', title);
+        setMeta('property', 'og:description', description);
+        setMeta('property', 'og:type', 'profile');
+        setMeta('property', 'og:locale', 'ru_RU');
+        setMeta('property', 'og:url', window.location.href);
+        setMeta('name', 'twitter:title', title);
+        setMeta('name', 'twitter:description', description);
+      }
+
+      // -------------------------------------------------------------- rendering
+
+      function renderBlocked(card) {
+        document.getElementById('card-blocked-name').textContent = card.candidate_name || 'Кандидат';
+        document.getElementById('card-blocked-task').textContent = card.task_title || card.task_id || '—';
+        document.getElementById('card-blocked-hash').textContent = card.card_hash || cardHash;
+        applyMeta(card);
+        setState('blocked');
+      }
+
+      // -------------------------------------------------------------- defense
+
+      function readDefenseToken(hash) {
+        try {
+          return window.sessionStorage.getItem('merilo-defense-' + hash);
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function clearDefenseToken(hash) {
+        try {
+          window.sessionStorage.removeItem('merilo-defense-' + hash);
+        } catch (err) {
+          // sessionStorage can be unavailable in hardened privacy modes
+        }
+      }
+
+      function setupDefense(card) {
+        const panel = document.getElementById('defense-panel');
+        if (!panel) return;
+
+        const questions = Array.isArray(card.defense_questions) ? card.defense_questions : [];
+        const answers = Array.isArray(card.defense_answers) ? card.defense_answers : [];
+        const status = card.defense_status || 'unavailable';
+        const form = document.getElementById('defense-answers');
+        const recorded = document.getElementById('defense-recorded');
+        const actions = document.getElementById('defense-actions');
+        const badge = document.getElementById('defense-badge');
+        const statusEl = document.getElementById('defense-status');
+
+        const setQuestions = (elements) => {
+          elements.forEach((el, index) => {
+            if (el) el.textContent = questions[index] || ('Вопрос ' + (index + 1));
+          });
+        };
+        const badgeBase = 'defense-badge ';
+
+        if (status === 'not_recorded') {
+          panel.classList.remove('hidden');
+          setQuestions([1, 2, 3].map((n) => document.getElementById('defense-q' + n)));
+          if (form) form.classList.remove('hidden');
+          if (recorded) recorded.classList.add('hidden');
+          if (actions) actions.classList.remove('hidden');
+          if (statusEl) statusEl.textContent = '';
+          if (badge) {
+            badge.textContent = 'Ожидает защиты';
+            badge.className = badgeBase + 'is-pending';
+          }
+        } else if (status === 'recorded') {
+          // The public read-only block above already shows the sealed defense.
+          panel.classList.add('hidden');
+          setQuestions([1, 2, 3].map((n) => document.getElementById('defense-recorded-q' + n)));
+          [1, 2, 3].forEach((n) => {
+            const el = document.getElementById('defense-a' + n);
+            if (el) el.textContent = answers[n - 1] || '—';
+          });
+          const hashEl = document.getElementById('defense-recorded-hash');
+          if (hashEl) {
+            hashEl.textContent = card.defense_hash ? 'Хэш защиты: ' + card.defense_hash : '';
+          }
+          if (form) form.classList.add('hidden');
+          if (recorded) recorded.classList.remove('hidden');
+          if (actions) actions.classList.add('hidden');
+          if (statusEl) statusEl.textContent = '';
+          if (badge) {
+            badge.textContent = 'Защита записана';
+            badge.className = badgeBase + 'is-recorded';
+          }
+        } else {
+          panel.classList.add('hidden');
+        }
+      }
+
+      // ------------------------------------------------- public defense record
+
+      function renderPublicDefense(card) {
+        const container = document.getElementById('card-defense-answers');
+        const badge = document.getElementById('card-defense-badge');
+        if (!container) return;
+
+        container.textContent = '';
+        const questions = Array.isArray(card.defense_questions) ? card.defense_questions : [];
+        const answers = Array.isArray(card.defense_answers) ? card.defense_answers : [];
+        const recorded = answers.length >= 3
+          && answers.slice(0, 3).some((answer) => String(answer || '').trim().length > 0);
+
+        if (!recorded) {
+          const empty = document.createElement('p');
+          empty.dataset.i18n = 'card.defenseMissing';
+          empty.textContent = t('card.defenseMissing', { fallback: 'Защита не записана' });
+          container.appendChild(empty);
+          if (badge) {
+            badge.textContent = t('card.defenseMissingBadge', { fallback: 'Не записана' });
+            badge.className = 'sig-pill';
+          }
+          return;
+        }
+
+        answers.slice(0, 3).forEach((answer, index) => {
+          const item = document.createElement('div');
+          item.className = 'defense-entry';
+
+          const label = document.createElement('p');
+          label.className = 'defense-entry-label';
+          label.textContent = 'Вопрос ' + (index + 1);
+
+          const question = document.createElement('p');
+          question.className = 'defense-entry-q';
+          question.textContent = questions[index] || ('Вопрос ' + (index + 1));
+
+          const reply = document.createElement('p');
+          reply.className = 'defense-entry-a';
+          reply.textContent = String(answer || '—');
+
+          item.appendChild(label);
+          item.appendChild(question);
+          item.appendChild(reply);
+          container.appendChild(item);
+        });
+
+        if (card.defense_hash) {
+          const hashLine = document.createElement('p');
+          hashLine.className = 'defense-hash';
+          hashLine.textContent = 'Хэш защиты: ' + card.defense_hash;
+          container.appendChild(hashLine);
+        }
+
+        if (badge) {
+          badge.textContent = t('card.defenseRecordedBadge', { fallback: 'Записана' });
+          badge.className = 'sig-pill is-signed';
+        }
+      }
+
+      // ------------------------------------------------------- portable links
+
+      function renderPortableLinks(card) {
+        document.getElementById('card-manifest-link').href =
+          '/api/cards/' + encodeURIComponent(cardHash) + '/manifest';
+        document.getElementById('card-badge-link').href =
+          '/badge/' + encodeURIComponent(cardHash) + '.svg';
+
+        const qr = document.getElementById('card-qr');
+        if (qr) {
+          qr.src = '/card/' + encodeURIComponent(cardHash) + '/qr.svg';
+          qr.hidden = false;
+        }
+
+        const profileLink = document.getElementById('card-profile-link');
+        if (profileLink) {
+          const profileUrl = typeof card.profile_url === 'string' ? card.profile_url.trim() : '';
+          if (profileUrl) {
+            profileLink.href = profileUrl;
+            profileLink.classList.remove('hidden');
+          } else {
+            profileLink.classList.add('hidden');
+          }
+        }
+      }
+
+      function renderMetadata(card, score) {
+        document.getElementById('card-meta-score').textContent = score + '/100';
+
+        const rubric = String(card.rubric_version || '').trim();
+        document.getElementById('card-meta-rubric').textContent = rubric || '—';
+
+        const model = String(card.model || card.model_name || '').trim();
+        document.getElementById('card-meta-model').textContent = model || '—';
+
+        const duration = Number(card.duration_ms);
+        const durationEl = document.getElementById('card-meta-duration');
+        if (Number.isFinite(duration) && duration > 0) {
+          durationEl.textContent = duration >= 1000
+            ? (duration / 1000).toFixed(2) + ' с'
+            : duration + ' мс';
+        } else {
+          durationEl.textContent = '—';
+        }
+      }
+
+      function renderLanguageAndAi(card) {
+        const languageKey = String(card.language || 'python').trim().toLowerCase();
+        document.getElementById('card-language').textContent =
+          LANGUAGE_LABELS[languageKey] || languageKey;
+
+        const aiEl = document.getElementById('card-ai-disclosure');
+        const aiAssisted = card.ai_assisted === true;
+        aiEl.textContent = 'AI: ' + (aiAssisted ? 'да' : 'нет');
+        aiEl.className = aiAssisted
+          ? 'cert-chip is-warn'
+          : 'cert-chip';
+      }
+
+      function renderCard(card) {
+        lastCard = card;
+
+        if (String(card.status || '').toLowerCase() === 'blocked') {
+          renderBlocked(card);
+          return;
+        }
+
+        const evaluation = card.evaluation || {};
+
+        document.getElementById('card-candidate-name').textContent = card.candidate_name || 'Кандидат';
+        document.getElementById('card-task-title').textContent = card.task_title || card.task_id || '—';
+
+        const companyRow = document.getElementById('card-company-name');
+        const company = card.company_name || '';
+        companyRow.textContent = company || '—';
+        if (!company) companyRow.closest('span').classList.add('hidden');
+
+        // Dates
+        const createdText = formatDate(card.created_at);
+        document.getElementById('card-created-at').textContent = createdText;
+        document.getElementById('card-created-at').setAttribute('datetime', card.created_at || '');
+        document.getElementById('card-issued-at').textContent = createdText;
+
+        // Score + tier
+        const score = card.total_score === null || card.total_score === undefined ? 0 : card.total_score;
+        document.getElementById('card-total-score').textContent = score;
+        document.getElementById('card-score-wrap').setAttribute('aria-label', 'Итоговый балл ' + score + ' из 100');
+
+        const tier = card.badge_tier || 'Needs Work';
+        const badgeEl = document.getElementById('card-badge-container');
+        const badgeTierText = document.getElementById('card-badge-tier');
+        badgeTierText.textContent = translateTier(tier);
+
+        renderLanguageAndAi(card);
+        renderMetadata(card, score);
+
+        const badgeBase = 'cert-stamp ';
+        if (tier.includes('Blocked') || tier.includes('Rejected')) {
+          badgeEl.className = badgeBase + 'tier--rejected';
+        } else if (tier.includes('Gold')) {
+          badgeEl.className = badgeBase + 'tier--gold';
+        } else if (tier.includes('Silver')) {
+          badgeEl.className = badgeBase + 'tier--silver';
+        } else {
+          badgeEl.className = badgeBase;
+        }
+
+        // Criterion scores (top-level columns, with evaluation fallback)
+        const criteria = [
+          { value: 'card-clean-code-val', bar: 'card-clean-code-bar', score: card.clean_code ?? evaluation.clean_code ?? 0 },
+          { value: 'card-architecture-val', bar: 'card-architecture-bar', score: card.architecture ?? evaluation.architecture ?? 0 },
+          { value: 'card-edge-cases-val', bar: 'card-edge-cases-bar', score: card.edge_cases ?? evaluation.edge_cases ?? 0 },
+        ];
+        criteria.forEach((item) => {
+          const value = Math.max(0, Math.min(100, Number(item.score) || 0));
+          document.getElementById(item.value).textContent = value;
+          document.getElementById(item.bar).style.width = value + '%';
+        });
+
+        // Executive summary
+        const summary = evaluation.executive_summary || card.executive_summary || t('card.summaryDone');
+        document.getElementById('card-executive-summary').textContent = summary;
+
+        // Hash + signature
+        const cardHashValue = card.card_hash || cardHash;
+        document.getElementById('card-serial').textContent = serialFromHash(cardHashValue);
+        document.getElementById('card-hash-display').textContent = cardHashValue;
+        document.getElementById('card-signature-display').textContent = card.signature || '—';
+        loadKeyFingerprint();
+
+        const status = String(card.status || 'verified').toLowerCase();
+        const isVerified = status === 'verified';
+
+        // Seal: authenticity is separate from the hiring decision.
+        const sealEl = document.getElementById('card-seal');
+        const sealIcon = document.getElementById('seal-icon');
+        const sealText = document.getElementById('seal-text');
+        sealText.dataset.i18nDynamic = '1';
+
+        if (isVerified) {
+          sealEl.className = 'cert-seal';
+          sealIcon.textContent = '✓';
+          sealText.textContent = t('card.seal');
+        } else {
+          sealEl.className = 'cert-seal is-rejected';
+          sealIcon.textContent = '!';
+          sealText.textContent = t('card.sealRejected');
+        }
+
+        // Signature validity (true / false / unknown)
+        const sigBadge = document.getElementById('card-signature-badge');
+        const sigStatus = document.getElementById('card-signature-status');
+        const sigFlag = card.is_signature_valid;
+
+        if (sigFlag === false) {
+          sigBadge.className = 'sig-pill is-blocked';
+          sigBadge.textContent = t('card.sigBad');
+          sigStatus.textContent = 'Invalid — подпись не совпадает';
+          sigStatus.className = 'sig-invalid';
+        } else if (sigFlag === true && isVerified) {
+          sigBadge.className = 'sig-pill is-signed';
+          sigBadge.textContent = t('card.sigOk');
+          sigStatus.textContent = 'Verified — подпись действительна';
+          sigStatus.className = 'verify-ok';
+        } else if (sigFlag === true) {
+          sigBadge.className = 'sig-pill is-rejected';
+          sigBadge.textContent = t('card.sigRejected');
+          sigStatus.textContent = 'Verified — подпись действительна, решение отрицательное';
+          sigStatus.className = 'sig-invalid';
+        } else {
+          sigBadge.className = 'sig-pill';
+          sigBadge.textContent = 'Signature unchecked';
+          sigStatus.textContent = 'Не проверялась сервером';
+          sigStatus.className = '';
+        }
+
+        // Evaluation provenance (honest: Gemini vs deterministic fallback).
+        // Never default to Gemini when the field is absent — report it as unknown.
+        const rawMode = card.evaluation_mode || evaluation.evaluation_mode || '';
+        const mode = String(rawMode).trim().toLowerCase();
+        // The concrete model id is configured server-side (GEMINI_MODEL) and may change;
+        // only echo it when the API actually reports one, never hardcode it here.
+        const rawModel = card.model || card.model_name || card.gemini_model || evaluation.model || '';
+        const modelName = String(rawModel || '').trim();
+        document.getElementById('card-eval-mode').textContent = mode === 'fallback'
+          ? 'Детерминированная эвристика (fallback, без сети)'
+          : mode === 'openai'
+            ? 'OpenAI · ' + (modelName || 'model') + ' (live, JSON output)'
+          : mode === 'gemini'
+            ? (modelName ? 'Gemini · ' + modelName + ' (live, structured output)' : 'Gemini (live, structured output)')
+            : 'Источник не указан';
+
+        const registryNote = document.getElementById('card-registry-note');
+        registryNote.dataset.i18nDynamic = '1';
+        registryNote.textContent = isVerified ? t('card.registryNote') : t('card.registryNoteRejected');
+
+        renderPublicDefense(card);
+        renderPortableLinks(card);
+        setupDefense(card);
+        applyMeta(card);
+        setState('success');
+      }
+
+      // ------------------------------------------------------------------ load
+
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      const cardHash = pathSegments[pathSegments.length - 1] || 'demo2026kz01';
+      document.getElementById('card-notfound-hash').textContent = cardHash;
+
+      async function loadCard() {
+        setState('loading');
+        try {
+          const response = await fetch('/api/cards/' + encodeURIComponent(cardHash), {
+            headers: { Accept: 'application/json' },
+          });
+
+          if (response.status === 404) {
+            setDocMeta(
+              'Карточка не найдена — Merilo',
+              'Карточка верификации с таким хэшем не найдена в публичном реестре Merilo.'
+            );
+            setState('notfound');
+            return;
+          }
+          if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+          }
+
+          const card = await response.json();
+          if (!card || typeof card !== 'object') {
+            setDocMeta(
+              'Карточка не найдена — Merilo',
+              'Карточка верификации с таким хэшем не найдена в публичном реестре Merilo.'
+            );
+            setState('notfound');
+            return;
+          }
+          renderCard(card);
+        } catch (err) {
+          console.error('Ошибка загрузки карточки:', err);
+          setDocMeta(
+            'Не удалось загрузить карточку — Merilo',
+            'Сервис публичных карточек Merilo временно недоступен. Повторите попытку.'
+          );
+          setState('error');
+        }
+      }
+
+      // ----------------------------------------------------------- interactions
+
+      const retryBtn = document.getElementById('card-retry');
+      if (retryBtn) retryBtn.addEventListener('click', loadCard);
+
+      document.querySelectorAll('[data-action="copy-link"]').forEach((btn) => {
+        btn.addEventListener('click', handleCopyLink);
+      });
+      const shareBtn = document.getElementById('share-link-btn');
+      if (shareBtn) shareBtn.addEventListener('click', handleCopyLink);
+
+      const badgeMdBtn = document.getElementById('card-copy-badge-md');
+      if (badgeMdBtn) badgeMdBtn.addEventListener('click', handleCopyBadgeMarkdown);
+
+      const printBtn = document.getElementById('card-print-btn');
+      if (printBtn) printBtn.addEventListener('click', () => window.print());
+
+      const defenseSealBtn = document.getElementById('defense-seal');
+      if (defenseSealBtn) {
+        defenseSealBtn.addEventListener('click', async () => {
+          const statusEl = document.getElementById('defense-status');
+          const setStatus = (text, tone) => {
+            if (!statusEl) return;
+            const toneClass = tone === 'error'
+              ? ' is-error'
+              : tone === 'ok'
+                ? ' is-ok'
+                : '';
+            statusEl.className = 'defense-status' + toneClass;
+            statusEl.textContent = text;
+          };
+
+          const card = lastCard;
+          if (!card) return;
+          const hash = card.card_hash || cardHash;
+          const token = readDefenseToken(hash);
+          if (!token) {
+            setStatus('Токен защиты не найден: откройте карточку сразу после верификации.', 'error');
+            return;
+          }
+
+          const answers = Array.from(document.querySelectorAll('[data-defense-answer]'))
+            .sort((a, b) => Number(a.dataset.defenseAnswer) - Number(b.dataset.defenseAnswer))
+            .map((el) => el.value.trim());
+          if (
+            answers.length !== 3 ||
+            answers.some((answer) => answer.length < 20 || answer.length > 1200)
+          ) {
+            setStatus('Каждый ответ должен содержать от 20 до 1200 символов.', 'error');
+            return;
+          }
+
+          defenseSealBtn.disabled = true;
+          setStatus('Отправляем…', '');
+          try {
+            const response = await fetch(
+              '/api/cards/' + encodeURIComponent(hash) + '/defense',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Defense-Token': token,
+                },
+                body: JSON.stringify({ answers }),
+              }
+            );
+            let payload = null;
+            try {
+              payload = await response.json();
+            } catch (err) {
+              payload = null;
+            }
+            if (response.ok && payload) {
+              clearDefenseToken(hash);
+              setStatus('Защита записана. Хэш: ' + payload.defense_hash, 'ok');
+              window.setTimeout(loadCard, 900);
+            } else {
+              const message = payload && payload.error && payload.error.message
+                ? payload.error.message
+                : 'HTTP ' + response.status;
+              setStatus('Не удалось записать защиту: ' + message, 'error');
+            }
+          } catch (err) {
+            setStatus('Не удалось записать защиту: сеть недоступна.', 'error');
+          } finally {
+            defenseSealBtn.disabled = false;
+          }
+        });
+      }
+
+      // Re-render dynamic card content when the language pills switch
+      window.addEventListener('merilo:localechange', () => {
+        if (lastCard) renderCard(lastCard);
+      });
+
+      loadCard();
+    });
+  </script>
+</body>
+</html>

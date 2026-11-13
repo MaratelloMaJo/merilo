@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Merilo</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header class="top">
+    <span class="logo">M</span><b>Merilo</b>
+    <span class="conn" id="conn"><i></i><span>Проверка…</span></span>
+    <button class="icon" id="settingsBtn" title="Настройки" aria-label="Настройки" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+    </button>
+  </header>
+
+  <section class="settings" id="settings" hidden>
+    <label for="wsUrl">Адрес рабочего пространства Merilo</label>
+    <div class="row"><input id="wsUrl" placeholder="http://127.0.0.1:8000"><button class="btn" id="saveSettings">Сохранить</button></div>
+    <p class="muted">Расширение обращается только к этому адресу. Ключи API хранятся на сервере Merilo, не здесь.</p>
+  </section>
+
+  <main>
+    <section class="block" id="pageBox">
+      <div class="kind" id="kind">—</div>
+      <div class="title" id="pageTitle">…</div>
+      <div class="url" id="pageUrl"></div>
+    </section>
+
+    <section class="block" id="jobBox" hidden>
+      <div class="label">Активная вакансия <a id="jobLink" target="_blank" rel="noopener">изменить</a></div>
+      <div class="title sm" id="jobTitle"></div>
+      <div class="chips" id="jobReqs"></div>
+      <div class="muted" id="jobSummary"></div>
+    </section>
+
+    <section class="block actions" id="actionBox">
+      <button class="btn primary" id="analyze">Анализировать</button>
+      <p class="muted" id="hint"></p>
+    </section>
+
+    <section id="out" aria-live="polite"></section>
+
+    <section class="block actions two" id="after" hidden>
+      <button class="btn primary" id="save">Сохранить в Merilo</button>
+      <button class="btn" id="open">Открыть в Merilo</button>
+      <p class="muted" id="saveState" style="grid-column:1/-1"></p>
+    </section>
+  </main>
+
+  <footer class="privacy">Страница читается только по вашему клику. Данные идут на ваш сервер Merilo. LinkedIn не анализируется — сохраняется только адрес.</footer>
+  <script src="panel.js"></script>
+</body>
+</html>

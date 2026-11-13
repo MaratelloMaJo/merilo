@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Помощь — Merilo</title>
+  <meta name="description" content="Как работает Merilo: три шлюза проверки кода, подписанная карточка навыка и публичная защита решения. Ответы на частые вопросы.">
+  <meta name="theme-color" content="#F3EFE6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14130F" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="/static/merilo.css">
+  <script>
+    (function () {
+      try {
+        var forced = new URLSearchParams(location.search).get("theme");
+        var saved = localStorage.getItem("merilo.theme");
+        var theme = forced === "dark" || forced === "light"
+          ? forced
+          : (saved === "dark" || saved === "light"
+            ? saved
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#help-main">Перейти к содержанию</a>
+
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="/" aria-label="Merilo — на главную">
+        <span class="brand-name">MERILO</span>
+        <span class="brand-sub" data-i18n="brand.engine">Инструмент верификации кода</span>
+      </a>
+
+      <nav class="masthead-nav" aria-label="Разделы страницы">
+        <a class="nav-link" href="/#workbench" data-i18n="nav.stand">Стенд</a>
+        <a class="nav-link" href="/#how" data-i18n="nav.how">Как это работает</a>
+        <a class="nav-link" href="/#faq" data-i18n="nav.faq">Вопросы</a>
+      </nav>
+
+      <div class="masthead-tools">
+        <button id="theme-toggle" type="button" class="icon-btn theme-toggle"
+                aria-label="Переключить тему" aria-pressed="false" title="Тема">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+          </svg>
+        </button>
+
+        <div class="lang-switch" role="group" aria-label="Язык интерфейса">
+          <button type="button" class="lang-btn" data-lang="ru" aria-label="RU — Русский язык">RU</button>
+          <button type="button" class="lang-btn" data-lang="kz" aria-label="КЗ — Қазақ тілі">КЗ</button>
+          <button type="button" class="lang-btn" data-lang="en" aria-label="EN — English">EN</button>
+        </div>
+
+        <a class="btn btn-header" href="/app" data-i18n="nav.portal">HR-Портал</a>
+
+        <button id="mobile-menu-toggle" type="button" class="icon-btn mobile-menu-toggle"
+                aria-label="Открыть меню" aria-expanded="false" aria-controls="mobile-menu">
+          <span class="menu-line" aria-hidden="true"></span>
+          <span class="menu-line" aria-hidden="true"></span>
+          <span class="menu-line" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="mobile-menu" hidden>
+      <nav class="mobile-menu-nav" aria-label="Мобильное меню">
+        <a class="mobile-nav-link" href="/#workbench" data-i18n="nav.stand">Стенд</a>
+        <a class="mobile-nav-link" href="/#how" data-i18n="nav.how">Как это работает</a>
+        <a class="mobile-nav-link" href="/#faq" data-i18n="nav.faq">Вопросы</a>
+        <a class="mobile-nav-link" href="/help" data-i18n="nav.help">Помощь</a>
+        <a class="mobile-nav-link mobile-nav-portal" href="/app" data-i18n="nav.portal">HR-Портал →</a>
+        <a class="mobile-nav-link" href="/?auth=1" data-i18n="user.account">Аккаунт</a>
+      </nav>
+      <div class="mobile-menu-lang lang-switch" role="group" aria-label="Язык интерфейса">
+        <button type="button" class="lang-btn" data-lang="ru" aria-label="RU — Русский язык">RU</button>
+        <button type="button" class="lang-btn" data-lang="kz" aria-label="КЗ — Қазақ тілі">КЗ</button>
+        <button type="button" class="lang-btn" data-lang="en" aria-label="EN — English">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="help-main">
+    <section class="hero wrap" aria-labelledby="help-title">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="mono-label" data-i18n="help.kicker">Merilo · руководство</p>
+          <h1 id="help-title" class="hero-title" data-i18n="help.title">Как работает Merilo</h1>
+          <p class="hero-thesis" data-i18n="help.lede">
+            Merilo измеряет конкретную инженерную работу, а не составляет рейтинг людей.
+            Вы загружаете решение, система прогоняет его через три шлюза и возвращает
+            подписанную карточку с оценкой, разбором и записанной защитой.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="/#workbench" data-i18n="help.cta">Открыть стенд</a>
+            <a class="btn btn-secondary" href="/app" data-i18n="help.portalCta">Перейти в HR-Портал</a>
+          </div>
+        </div>
+
+        <aside class="facts" aria-labelledby="help-facts-title">
+          <p class="facts-title mono-label" id="help-facts-title" data-i18n="help.factsTitle">Что внутри</p>
+          <div class="fact">
+            <span class="fact-label" data-i18n="help.factGate">Шлюзы</span>
+            <span class="fact-value" data-i18n="help.factGateValue">AST · Security · AI</span>
+          </div>
+          <div class="fact">
+            <span class="fact-label" data-i18n="help.factSign">Подпись</span>
+            <span class="fact-value">HMAC-SHA256 · Ed25519</span>
+          </div>
+          <div class="fact">
+            <span class="fact-label" data-i18n="help.factLang">Языки</span>
+            <span class="fact-value" data-i18n="help.factLangValue">13 · tree-sitter</span>
+          </div>
+          <div class="fact">
+            <span class="fact-label" data-i18n="help.factDefense">Защита</span>
+            <span class="fact-value" data-i18n="help.factDefenseValue">3 вопроса · запись</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="help-steps-title">
+      <div class="section-head">
+        <p class="section-index">01</p>
+        <div>
+          <h2 id="help-steps-title" class="section-title" data-i18n="help.stepsTitle">Три шага</h2>
+          <p class="section-lede" data-i18n="help.stepsLede">
+            От решения до проверяемой карточки — без телефонных интервью и субъективных резюме.
+          </p>
+        </div>
+      </div>
+
+      <div class="how-grid">
+        <article class="how-step">
+          <div class="how-step-top">
+            <span class="how-step-index">STEP 1</span>
+            <span class="mono-label" data-i18n="help.step1Label">решение</span>
+          </div>
+          <h3 data-i18n="help.step1Title">Загрузите решение</h3>
+          <p data-i18n="help.step1Text">
+            Выберите задачу из каталога или вставьте собственный код. Укажите язык —
+            Python и JavaScript откалиброваны глубже, остальные языки проходят
+            синтаксический и защитный шлюзы.
+          </p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-top">
+            <span class="how-step-index">STEP 2</span>
+            <span class="mono-label" data-i18n="help.step2Label">проверка</span>
+          </div>
+          <h3 data-i18n="help.step2Title">Пройдите три шлюза</h3>
+          <p data-i18n="help.step2Text">
+            Первый шлюз разбирает синтаксическое дерево, второй ищет попытки
+            инъекции и нарушения целостности, третий оценивает чистоту кода,
+            архитектуру и граничные случаи по взвешенной рубрике.
+          </p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-top">
+            <span class="how-step-index">STEP 3</span>
+            <span class="mono-label" data-i18n="help.step3Label">карточка</span>
+          </div>
+          <h3 data-i18n="help.step3Title">Получите карточку</h3>
+          <p data-i18n="help.step3Text">
+            Результат подписывается и становится публичной карточкой: оценка,
+            резюме для нанимающего руководителя, версия рубрики и модель оценки.
+            Ссылку можно отправить рекрутеру или добавить в профиль.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="help-faq-title">
+      <div class="section-head">
+        <p class="section-index">02</p>
+        <div>
+          <h2 id="help-faq-title" class="section-title" data-i18n="help.faqTitle">Частые вопросы</h2>
+          <p class="section-lede" data-i18n="help.faqLede">
+            Короткие ответы на то, что обычно спрашивают до первой проверки.
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-list">
+        <details class="faq-item" open>
+          <summary data-i18n="help.q1">Нужна ли регистрация, чтобы проверить код?</summary>
+          <p data-i18n="help.a1">
+            Нет. Стенд открыт без регистрации. Аккаунт нужен, чтобы сохранить карточку
+            в профиле и вернуться к ней позже.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="help.q2">Что именно оценивает система?</summary>
+          <p data-i18n="help.a2">
+            Три измерения: чистота кода и читаемость, архитектура и безопасность,
+            граничные условия и обработка исключений. Итог — взвешенная оценка от 0 до 100.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="help.q3">Можно ли использовать AI-ассистента?</summary>
+          <p data-i18n="help.a3">
+            Да, но это нужно честно отметить. Пометка не понижает оценку автоматически:
+            карточка просто показывает, что решение готовилось с AI-помощью.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="help.q4">Что такое защита решения?</summary>
+          <p data-i18n="help.a4">
+            Это три вопроса по вашему коду. Ответы записываются и подписываются вместе
+            с карточкой, чтобы нанимающая сторона видела, что решение понято автором.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="help.q5">Кто видит мою карточку?</summary>
+          <p data-i18n="help.a5">
+            Только те, кому вы отправили ссылку. Публичный профиль показывает
+            проверенные карточки без email и внутренних идентификаторов.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="help-next-title">
+      <div class="section-head">
+        <p class="section-index">03</p>
+        <div>
+          <h2 id="help-next-title" class="section-title" data-i18n="help.nextTitle">Что дальше</h2>
+          <p class="section-lede" data-i18n="help.nextLede">
+            Начните с открытого стенда или откройте рабочее пространство, если вы рекрутер.
+          </p>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/#workbench" data-i18n="help.cta">Открыть стенд</a>
+        <a class="btn btn-secondary" href="/app" data-i18n="help.portalCta">Перейти в HR-Портал</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <div><strong>MERILO</strong> © 2026 · <span data-i18n="footer.tagline">измерение кода, а не рейтинг людей</span></div>
+      <div class="footer-links">
+        <a href="/#how" data-i18n="footer.how">Как это работает</a>
+        <a href="/#boundaries" data-i18n="footer.boundaries">Границы</a>
+        <a href="/help" data-i18n="nav.help">Помощь</a>
+        <a href="/card/demo2026kz01" data-i18n="footer.registry">Реестр карточек</a>
+        <span>HMAC-SHA256 · Ed25519</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/i18n.js"></script>
+  <script>
+    (function () {
+      var btn = document.getElementById("theme-toggle");
+      if (btn) {
+        var sync = function () {
+          btn.setAttribute("aria-pressed", document.documentElement.getAttribute("data-theme") === "dark" ? "true" : "false");
+        };
+        sync();
+        btn.addEventListener("click", function () {
+          var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          try { localStorage.setItem("merilo.theme", next); } catch (e) {}
+          sync();
+        });
+      }
+
+      var toggle = document.getElementById("mobile-menu-toggle");
+      var menu = document.getElementById("mobile-menu");
+      if (toggle && menu) {
+        toggle.addEventListener("click", function () {
+          var open = menu.hidden;
+          menu.hidden = !open;
+          toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        menu.querySelectorAll("a").forEach(function (link) {
+          link.addEventListener("click", function () {
+            menu.hidden = true;
+            toggle.setAttribute("aria-expanded", "false");
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

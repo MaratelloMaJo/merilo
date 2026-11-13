@@ -1,0 +1,46 @@
+# fly.toml — Merilo demo on Fly.io
+#
+# One container, one process, port 8000: FastAPI serves the JSON API, the static
+# frontend and the SQLite-backed verification engine. The database is created and
+# seeded by the FastAPI lifespan on first boot, so no migration step is needed.
+#
+# Deploy:  fly deploy --remote-only
+# Logs:    fly logs -a merilo-nfc
+
+app = "merilo-nfc"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# Persistent SQLite. The volume survives restarts, suspends and redeploys, so
+# cards issued to the jury are not lost between visits during the selection week.
+[mounts]
+  source = "merilo_data"
+  destination = "/data"
+
+[env]
+  PORT = "8000"
+  MERILO_ENV = "production"
+  MERILO_DB_PATH = "/data/merilo.db"
+  MERILO_DEMO_MODE = "1"
+  GEMINI_MODEL = "gemini-3.6-flash"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
