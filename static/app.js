@@ -2763,6 +2763,15 @@ function applyTheme(theme) {
   const next = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', next);
   try { localStorage.setItem(THEME_STORAGE_KEY, next); } catch (e) {}
+  // A forced ?theme= link is a one-time override; the user's click wins next
+  // time, so drop the parameter after a manual switch.
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('theme')) {
+      url.searchParams.delete('theme');
+      history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
+    }
+  } catch (e) { /* URL API unavailable */ }
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
 }

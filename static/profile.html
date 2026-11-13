@@ -446,6 +446,13 @@
         var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
         document.documentElement.setAttribute("data-theme", next);
         try { localStorage.setItem("merilo.theme", next); } catch (e) {}
+        try {
+          var url = new URL(window.location.href);
+          if (url.searchParams.has("theme")) {
+            url.searchParams.delete("theme");
+            history.replaceState(null, "", url.pathname + (url.search ? url.search : "") + url.hash);
+          }
+        } catch (e) {}
         sync();
       });
     })();
