@@ -27,9 +27,8 @@ data/
 .vscode/
 .idea/
 
-# --- Local-only agent and design workspaces ---------------------------------
+# --- Local-only design workspaces -------------------------------------------
 .design/
-.superpowers/
 .waylog/
 graphify-out/
 

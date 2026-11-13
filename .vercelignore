@@ -7,7 +7,6 @@ venv
 .pytest_cache
 *.db
 *.db-*
-.claude
 tests
 screenshots
 extension
