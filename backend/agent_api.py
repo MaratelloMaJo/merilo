@@ -26,7 +26,7 @@ import re
 import time
 import urllib.parse
 import uuid
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Request
@@ -307,11 +307,11 @@ async def agent_talent_search(payload: AgentRequest, request: Request, x_merilo_
             yield step("plan", "done", "План поиска", f"{len(plan)} запроса к GitHub Search", queries=plan)
 
             # budget
-            core_left, search_left = None, None
+            core_left, _search_left = None, None
             try:
                 rl = await asyncio.to_thread(ws._gh_sync, "/rate_limit")
                 core_left = rl["resources"]["core"]["remaining"]
-                search_left = rl["resources"]["search"]["remaining"]
+                rl["resources"]["search"]["remaining"]
             except (ws.UpstreamError, KeyError):
                 pass
 
@@ -372,7 +372,7 @@ async def agent_talent_search(payload: AgentRequest, request: Request, x_merilo_
             yield step("prefilter", "running", "Отбор по метаданным")
             pool = []
             for login, v in by_owner.items():
-                best, best_hits = None, []
+                best, _best_hits = None, []
                 all_hits: set[str] = set()
                 tutorial_only = True
                 for repo in v["repos"][:12]:
@@ -384,7 +384,7 @@ async def agent_talent_search(payload: AgentRequest, request: Request, x_merilo_
                     tutorial_only = tutorial_only and is_tut
                     rank = (not is_tut, len(hits), min(repo.get("size", 0), 50000))
                     if best is None or rank > best[0]:
-                        best, best_hits = (rank, repo, is_tut), hits
+                        best, _best_hits = (rank, repo, is_tut), hits
                 if not best:
                     excluded["нет совпадений с критериями"] += 1
                     continue

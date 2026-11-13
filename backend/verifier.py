@@ -31,6 +31,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from backend import openai_client
 from backend.fallback_cache import (
     INJECTION_KEYWORDS,
     evaluation_cache_key,
@@ -45,7 +46,6 @@ from backend.languages import (
     analyze_code,
     language_label,
 )
-from backend import openai_client
 from backend.schemas import CodeEvaluationResponse, VerifyResponse
 
 DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"

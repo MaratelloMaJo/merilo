@@ -5,6 +5,9 @@ extend-exclude = ["static"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+# Line length is a style preference; the project keeps the 120-column target
+# but does not fail CI on a long string or a generated SQL/JSON literal.
+ignore = ["E501", "E741"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

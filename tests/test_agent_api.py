@@ -5,7 +5,8 @@ import json
 
 import pytest
 
-from backend import agent_api, workspace_api as ws
+from backend import agent_api
+from backend import workspace_api as ws
 
 
 def _sse(response):
