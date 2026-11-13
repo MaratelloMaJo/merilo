@@ -6,16 +6,18 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.162-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Gemini](https://img.shields.io/badge/Gemini-model%20from%20GEMINI_MODEL-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
 [![SQLite](https://img.shields.io/badge/SQLite-zero--config-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![Tests](https://img.shields.io/badge/tests-397%20passed%20%C2%B7%20coverage%2085.30%25-3FB950?style=for-the-badge)](tests)
+[![Tests](https://img.shields.io/badge/tests-437%20passed-3FB950?style=for-the-badge)](tests)
 [![NFC 2026](https://img.shields.io/badge/National%20Founder%20Cup-2026%20%C2%B7%20Case%205-FF6B6B?style=for-the-badge)](https://hackathon.kz)
 
 National Founder Cup 2026 (Шымкент) · кейс 5 «The Experience Gap» · команда **Merilo Found** (solo developer: Marat Zholynbek).
+
+Публичный репозиторий: **https://github.com/MaratelloMaJo/merilo** · демо: **https://merilo-nfc.fly.dev**
 
 ---
 
 ## Скриншоты и инфраструктура
 
-Скриншоты, презентация (`docs/presentation.html`), PPTX-дека (`docs/Merilo_NFC_Pitch.pptx`) и офлайн-страница (`docs/offline-demo.html`) лежат в репозитории: `screenshots/`, `docs/presentation.html`, `docs/Merilo_NFC_Pitch.pptx`, `docs/offline-demo.html`. Docker, `.dockerignore`, `fly.toml`, `render.yaml` и CI-workflow — в корне репозитория (`Dockerfile`, `.dockerignore`, `fly.toml`, `render.yaml`, `.github/workflows/ci.yml`).
+Скриншоты (`screenshots/`), офлайн-страница (`docs/offline-demo.html`) и презентация (`docs/presentation.html`) лежат в репозитории. Docker, `.dockerignore`, `fly.toml`, `render.yaml` и CI-workflow — в корне (`Dockerfile`, `.dockerignore`, `fly.toml`, `render.yaml`, `.github/workflows/ci.yml`); бинарные экспорты презентации в публичное дерево не входят.
 
 Демо для жюри: **https://merilo-nfc.fly.dev** (снимок 2026-11-13 отдавал три Python-кейса; финальная сборка с восемью задачами деплоится из `main`).
 
